@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ULTIMATE GENERATOR ⚡</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    background:linear-gradient(135deg,#020617,#020617,#0f172a);
+    color:#fff;
+}
+.container{
+    max-width:1100px;
+    margin:auto;
+    padding:30px;
+}
+.card{
+    background:rgba(255,255,255,0.05);
+    backdrop-filter:blur(15px);
+    border-radius:20px;
+    padding:25px;
+    box-shadow:0 0 40px rgba(0,0,0,0.7);
+}
+h1{text-align:center;}
+
+input,textarea{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:none;
+    margin:10px 0;
+}
+
+textarea{height:250px;}
+
+button{
+    padding:10px 18px;
+    border:none;
+    border-radius:10px;
+    margin:5px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.gen{background:#22c55e;}
+.copy{background:#3b82f6;}
+.exp{background:#a855f7;}
+.dec{background:#f59e0b;}
+.clear{background:#ef4444;}
+
+.row{display:flex;flex-wrap:wrap;gap:10px;}
+
+.toggle{display:flex;flex-wrap:wrap;gap:15px;margin:10px 0;}
+
+.history{
+    margin-top:20px;
+    max-height:200px;
+    overflow:auto;
+    background:#00000040;
+    padding:10px;
+    border-radius:10px;
+}
+.item{
+    padding:8px;
+    border-bottom:1px solid #ffffff20;
+    cursor:pointer;
+}
+.item:hover{background:#ffffff10;}
+</style>
+</head>
+
+<body>
+<div class="container">
+<div class="card">
+
+<h1>⚡ ULTIMATE GENERATOR</h1>
+
+<textarea id="url" placeholder="Masukkan 1 atau banyak URL (pisah enter)"></textarea>
+
+<div class="toggle">
+<label><input type="checkbox" id="antiInspect" checked> Anti Inspect</label>
+<label><input type="checkbox" id="antiClick" checked> Disable Right Click</label>
+<label><input type="checkbox" id="antiDebug" checked> Anti Debugger</label>
+<label><input type="checkbox" id="multiLink"> Multi Link Mode</label>
+</div>
+
+<div class="row">
+<button class="gen" onclick="generate()">Generate</button>
+<button class="copy" onclick="copy()">Copy</button>
+<button class="exp" onclick="exportJS()">Export JS</button>
+<button class="dec" onclick="decrypt()">Decrypt</button>
+<button class="clear" onclick="clearHistory()">Clear History</button>
+</div>
+
+<textarea id="output"></textarea>
+
+<div class="history" id="history"></div>
+
+</div>
+</div>
+
+<script>
+
+// ===== RANDOM VAR =====
+function randVar(){
+    return "_0x" + Math.random().toString(36).substring(2,8);
+}
+
+// ===== ENCODE =====
+function encodeLayer(url){
+    let b = btoa(url);
+    let rev = b.split("").reverse().join("");
+    return btoa(rev);
+}
+
+// ===== HISTORY =====
+function saveHistory(u){
+    let d = JSON.parse(localStorage.getItem("hist")||"[]");
+    d.unshift(u);
+    d=d.slice(0,10);
+    localStorage.setItem("hist",JSON.stringify(d));
+    renderHistory();
+}
+function renderHistory(){
+    let d=JSON.parse(localStorage.getItem("hist")||"[]");
+    let h="";
+    d.forEach(x=>{
+        h+=`<div class="item" onclick="reuse(\`${x}\`)">${x}</div>`;
+    });
+    document.getElementById("history").innerHTML=h;
+}
+function reuse(u){document.getElementById("url").value=u;}
+function clearHistory(){localStorage.removeItem("hist");renderHistory();}
+
+// ===== GENERATE =====
+function generate(){
+
+let urls = document.getElementById("url").value.trim().split("\n");
+if(!urls[0]) return alert("Isi URL!");
+
+let multi = document.getElementById("multiLink").checked;
+
+let chosen = multi ? urls[Math.floor(Math.random()*urls.length)] : urls[0];
+
+let encoded = encodeLayer(chosen);
+
+// split
+let p1 = encoded.slice(0,encoded.length/3);
+let p2 = encoded.slice(encoded.length/3,encoded.length*2/3);
+let p3 = encoded.slice(encoded.length*2/3);
+
+// random var
+let a=randVar(),b=randVar(),c=randVar(),d=randVar(),e=randVar();
+
+let antiInspect = document.getElementById("antiInspect").checked;
+let antiClick = document.getElementById("antiClick").checked;
+let antiDebug = document.getElementById("antiDebug").checked;
+
+let script = `<script>
+(() => {
+
+const ${a}="${p1}",${b}="${p2}",${c}="${p3}";
+const ${d}=${a}+${b}+${c};
+
+const ${e}=()=>{
+    let x=atob(${d});
+    x=x.split("").reverse().join("");
+    location.href=atob(x);
+};
+
+${antiInspect?`
+window.addEventListener('keydown',function(e){
+let k=e.key.toLowerCase();
+if((e.ctrlKey&&k==='u')||(e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(k))||k==='f12'){
+e.preventDefault();${e}();
+}},true);
+`:``}
+
+${antiClick?`
+window.addEventListener('contextmenu',e=>{e.preventDefault();${e}();},true);
+`:``}
+
+${antiDebug?`
+setInterval(()=>{
+let t=Date.now();
+debugger;
+if(Date.now()-t>100){${e}();}
+},500);
+`:``}
+
+})();
+<\/script>`;
+
+document.getElementById("output").value = script;
+
+saveHistory(chosen);
+}
+
+// ===== COPY =====
+function copy(){
+let t=document.getElementById("output");
+t.select();
+document.execCommand("copy");
+alert("Copied!");
+}
+
+// ===== EXPORT =====
+function exportJS(){
+let blob=new Blob([document.getElementById("output").value],{type:"text/javascript"});
+let a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="script.js";
+a.click();
+}
+
+// ===== DECRYPT =====
+function decrypt(){
+let x=prompt("Input encoded:");
+try{
+let a=atob(x);
+a=a.split("").reverse().join("");
+alert(atob(a));
+}catch{alert("error");}
+}
+
+renderHistory();
+
+</script>
+</body>
+</html>
