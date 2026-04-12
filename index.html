@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tools Hub PRO++</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif}
+body{background:linear-gradient(135deg,#020617,#0f172a);color:#fff}
+header{padding:20px;text-align:center;background:rgba(0,0,0,0.4);backdrop-filter:blur(10px)}
+header h1{font-size:26px}
+.search-box{margin-top:10px}
+.search-box input{width:90%;max-width:400px;padding:10px;border-radius:10px;border:none;outline:none;background:#111827;color:#fff}
+.container{padding:20px;max-width:1200px;margin:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:15px}
+.card{background:rgba(17,24,39,0.7);border-radius:20px;padding:20px;text-align:center;transition:0.3s;cursor:pointer;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;width:100%;height:100%;top:0;left:-100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.1),transparent);transition:0.5s}
+.card:hover::before{left:100%}
+.card:hover{transform:translateY(-8px) scale(1.02)}
+.icon{font-size:30px;margin-bottom:10px;color:#818cf8}
+.card h3{font-size:15px}
+.card p{font-size:12px;color:#9ca3af;margin:5px 0}
+.btn{display:inline-block;margin-top:10px;padding:8px 14px;border-radius:10px;background:#6366f1;color:#fff;text-decoration:none;font-size:12px}
+.btn:hover{background:#4f46e5}
+.history{margin-top:30px}
+.history h2{font-size:16px;margin-bottom:10px}
+.history-list{display:flex;flex-wrap:wrap;gap:10px}
+.history-item{background:#111827;padding:8px 12px;border-radius:8px;font-size:12px}
+footer{text-align:center;padding:15px;font-size:12px;color:#9ca3af}
+@media(max-width:500px){header h1{font-size:20px}}
+</style>
+</head>
+<body>
+
+<header>
+<h1>🚀 Tools Hub PRO++</h1>
+<div class="search-box">
+<input type="text" id="search" placeholder="Search tools...">
+</div>
+</header>
+
+<div class="container">
+<div class="grid" id="toolsGrid">
+
+<!-- TEMPLATE TOOL -->
+<script>
+const tools = [
+{title:"ULTIMATE GENERATOR",desc:"Description",url:"https://simquring.github.io/code/e-gen2.html",icon:"fa-bolt"},
+{title:"Tool 2",desc:"Description",url:"#",icon:"fa-link"},
+{title:"Tool 3",desc:"Description",url:"#",icon:"fa-video"},
+{title:"Tool 4",desc:"Description",url:"#",icon:"fa-download"},
+{title:"Generator PRO",desc:"Description",url:"https://simquring.github.io/code/e-gen1.html",icon:"fa-code"},
+{title:"Tool 6",desc:"Description",url:"#",icon:"fa-music"},
+{title:"Tool 7",desc:"Description",url:"#",icon:"fa-image"},
+{title:"Tool 8",desc:"Description",url:"#",icon:"fa-globe"},
+{title:"Tool 9",desc:"Description",url:"#",icon:"fa-lock"},
+{title:"Tool 10",desc:"Description",url:"#",icon:"fa-star"}
+];
+
+const grid = document.getElementById("toolsGrid");
+
+function renderTools(list){
+    grid.innerHTML = "";
+    list.forEach(t=>{
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `
+        <div class="icon"><i class="fa ${t.icon}"></i></div>
+        <h3>${t.title}</h3>
+        <p>${t.desc}</p>
+        <a href="${t.url}" class="btn" onclick="saveHistory('${t.title}')">Open</a>`;
+        grid.appendChild(div);
+    });
+}
+
+renderTools(tools);
+
+// SEARCH
+const search = document.getElementById("search");
+search.addEventListener("input", ()=>{
+    const val = search.value.toLowerCase();
+    const filtered = tools.filter(t=>t.title.toLowerCase().includes(val));
+    renderTools(filtered);
+});
+
+// HISTORY
+function saveHistory(name){
+    let h = JSON.parse(localStorage.getItem("history")||"[]");
+    h.unshift(name);
+    h = [...new Set(h)].slice(0,10);
+    localStorage.setItem("history",JSON.stringify(h));
+    renderHistory();
+}
+
+function renderHistory(){
+    const list = document.getElementById("historyList");
+    const h = JSON.parse(localStorage.getItem("history")||"[]");
+    list.innerHTML = h.map(i=>`<div class="history-item">${i}</div>`).join("");
+}
+</script>
+
+</div>
+
+<div class="history">
+<h2>🔥 Recent Tools</h2>
+<div class="history-list" id="historyList"></div>
+</div>
+
+</div>
+
+<footer>
+© 2026 Tools Hub PRO++
+</footer>
+
+<script>
+renderHistory();
+</script>
+
+</body>
+</html>
