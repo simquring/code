@@ -2,32 +2,112 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>XLOCK SaaS</title>
+<title>XLOCK Generate Licensi</title>
 
 <style>
-body{margin:0;font-family:sans-serif;background:#020617;color:white;display:flex;justify-content:center;}
-.container{max-width:1100px;width:100%;padding:20px;}
-.card{background:#0f172a;padding:20px;border-radius:12px;margin-bottom:20px;}
-input,select{width:100%;padding:10px;margin:5px 0;border-radius:8px;border:none;}
-button{padding:10px;border:none;border-radius:8px;margin:3px;cursor:pointer;}
-.badge{padding:3px 8px;border-radius:999px;font-size:12px;}
-.active{background:#22c55e;} .expired{background:#ef4444;} .disabled{background:#6b7280;}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter, sans-serif;
+  background:linear-gradient(135deg,#020617,#0f172a);
+  color:white;
+}
+
+/* CENTER LOGIN */
+.center{
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.card{
+  background:rgba(255,255,255,0.05);
+  backdrop-filter:blur(20px);
+  border-radius:16px;
+  padding:25px;
+  box-shadow:0 10px 40px rgba(0,0,0,0.5);
+}
+
+input,select{
+  width:100%;
+  padding:12px;
+  margin:6px 0;
+  border-radius:10px;
+  border:none;
+  background:#020617;
+  color:white;
+}
+
+button{
+  padding:10px 15px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  background:#3b82f6;
+  color:white;
+}
+
+/* DASHBOARD */
+.container{max-width:1200px;margin:auto;padding:20px;}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+  gap:15px;
+}
+
+.license{
+  background:rgba(255,255,255,0.05);
+  padding:15px;
+  border-radius:12px;
+  transition:0.2s;
+}
+.license:hover{transform:scale(1.02)}
+
+.badge{
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:12px;
+}
+.active{background:#22c55e}
+.expired{background:#ef4444}
+.disabled{background:#6b7280}
+
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:15px;
+}
+
+.toggle{
+  cursor:pointer;
+}
 </style>
 </head>
 
 <body>
-<div class="container">
 
-<div class="card" id="loginBox">
-<h3>Login</h3>
-<input id="email" placeholder="email">
-<input id="pass" type="password" placeholder="password">
-<button onclick="login()">Login</button>
+<!-- LOGIN -->
+<div id="loginPage" class="center">
+  <div class="card" style="width:300px;text-align:center">
+    <h2>XLOCK LOGIN</h2>
+    <input id="email" placeholder="email">
+    <input id="pass" type="password" placeholder="password">
+    <button onclick="login()">Login</button>
+  </div>
 </div>
 
-<div id="panel" style="display:none">
+<!-- PANEL -->
+<div id="panel" style="display:none" class="container">
 
-<div class="card" id="adminOnly" style="display:none">
+<div class="topbar">
+  <h2>🚀 XLOCK DASHBOARD</h2>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<!-- ADMIN -->
+<div id="adminBox" class="card" style="display:none">
 <h3>👤 Add User</h3>
 <input id="newEmail" placeholder="email">
 <input id="newPass" placeholder="password">
@@ -35,24 +115,26 @@ button{padding:10px;border:none;border-radius:8px;margin:3px;cursor:pointer;}
 <option value="user">User</option>
 <option value="admin">Admin</option>
 </select>
-<button onclick="addUser()">Tambah User</button>
-<div id="userMsg"></div>
+<button onclick="addUser()">Tambah</button>
+<div id="msg"></div>
 </div>
 
+<!-- GENERATE -->
 <div class="card">
-<h3>Generate License</h3>
-<input id="max" placeholder="max domain">
+<h3>🔑 Generate License</h3>
+<input id="max" placeholder="max domain (contoh: 3)">
 <button onclick="create()">Generate</button>
 <div id="out"></div>
 </div>
 
+<!-- STATS -->
 <div class="card">
-<h3>Dashboard</h3>
+<h3>📊 Statistik</h3>
 <div id="stats"></div>
-<div id="list"></div>
 </div>
 
-</div>
+<!-- LIST -->
+<div id="list" class="grid"></div>
 
 </div>
 
@@ -62,13 +144,14 @@ let TOKEN=localStorage.getItem("token");
 
 // AUTO LOGIN
 if(TOKEN){
-  init();
+  startApp();
 }
 
-function init(){
-  loginBox.style.display="none";
+function startApp(){
+  loginPage.style.display="none";
   panel.style.display="block";
-  start();
+  load();
+  setInterval(load,4000);
 }
 
 // LOGIN
@@ -78,6 +161,7 @@ async function login(){
     headers:{ "Content-Type":"application/json" },
     body: JSON.stringify({ email:email.value,password:pass.value })
   });
+
   const d=await res.json();
 
   if(d.status==="OK"){
@@ -85,11 +169,17 @@ async function login(){
     localStorage.setItem("token",TOKEN);
 
     if(d.role==="admin"){
-      document.getElementById("adminOnly").style.display="block";
+      adminBox.style.display="block";
     }
 
-    location.reload();
+    startApp();
   } else alert(d.message);
+}
+
+// LOGOUT
+function logout(){
+  localStorage.clear();
+  location.reload();
 }
 
 // ADD USER
@@ -103,8 +193,9 @@ async function addUser(){
       role:newRole.value
     })
   });
+
   const d=await res.json();
-  userMsg.innerHTML=d.message||d.error;
+  msg.innerHTML=d.message||d.error;
 }
 
 // CREATE LICENSE
@@ -114,11 +205,12 @@ async function create(){
     headers:{ "Content-Type":"application/json","Authorization":TOKEN },
     body: JSON.stringify({ maxDomain:max.value })
   });
+
   const d=await res.json();
-  out.innerHTML=d.license;
+  out.innerHTML="License: "+d.license;
 }
 
-// LOAD LIST
+// LOAD DATA
 async function load(){
   const res=await fetch(API+"/list",{
     method:"POST",
@@ -139,23 +231,24 @@ async function load(){
     if(x.status==="DISABLED") cls="disabled";
 
     return `
-    <div class="card">
-      ${x.email}<br>
-      <span class="badge ${cls}">${x.status}</span><br>
-      Exp: ${new Date(x.expire).toLocaleDateString()}<br>
-      Sisa: ${x.remaining}/${x.maxDomain}<br>
+    <div class="license">
+      <b>${x.email}</b><br>
+      <span class="badge ${cls}">${x.status}</span><br><br>
+
+      Aktif sampai:<br>
+      ${new Date(x.expire).toLocaleDateString()}<br><br>
+
+      Domain: ${x.domains.length}/${x.maxDomain}<br><br>
+
       <button onclick="toggle('${x.id}')">Toggle</button>
       <button onclick="del('${x.id}')">Delete</button>
-    </div>`;
+    </div>
+    `;
   }).join("");
 
-  stats.innerHTML=`Active:${a} | Expired:${e} | Disabled:${d}`;
-}
-
-// REALTIME
-function start(){
-  load();
-  setInterval(load,5000);
+  stats.innerHTML=`
+  Active: ${a} | Expired: ${e} | Disabled: ${d}
+  `;
 }
 
 // ACTION
@@ -174,5 +267,6 @@ async function del(id){
   });
 }
 </script>
+
 </body>
 </html>
