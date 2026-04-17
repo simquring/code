@@ -1,26 +1,17 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>XLOCK PANEL</title>
+<title>XLOCK SaaS</title>
 
 <style>
-body{
-  margin:0;
-  font-family:sans-serif;
-  background:#020617;
-  color:white;
-  display:flex;
-  justify-content:center;
-}
+body{margin:0;font-family:sans-serif;background:#020617;color:white;display:flex;justify-content:center;}
 .container{max-width:1000px;width:100%;padding:20px;}
 .card{background:#0f172a;padding:20px;border-radius:12px;margin-bottom:20px;}
 input{width:100%;padding:10px;margin:5px 0;border-radius:8px;border:none;}
-button{padding:10px;border:none;border-radius:8px;cursor:pointer;margin:3px;}
+button{padding:10px;border:none;border-radius:8px;margin:3px;cursor:pointer;}
 .badge{padding:3px 8px;border-radius:999px;font-size:12px;}
-.active{background:#22c55e;}
-.expired{background:#ef4444;}
-.disabled{background:#6b7280;}
+.active{background:#22c55e;} .expired{background:#ef4444;} .disabled{background:#6b7280;}
 </style>
 </head>
 
@@ -44,7 +35,8 @@ button{padding:10px;border:none;border-radius:8px;cursor:pointer;margin:3px;}
 </div>
 
 <div class="card">
-<h3>License</h3>
+<h3>License Dashboard</h3>
+<div id="stats"></div>
 <div id="list"></div>
 </div>
 
@@ -54,10 +46,14 @@ button{padding:10px;border:none;border-radius:8px;cursor:pointer;margin:3px;}
 
 <script>
 const API="https://xlock.stakemail91.workers.dev";
+let TOKEN = localStorage.getItem("token");
+let SESSION = null;
 
-let SESSION = JSON.parse(localStorage.getItem("session")||"null");
+if(TOKEN){
+  init();
+}
 
-if(SESSION){
+async function init(){
   loginBox.style.display="none";
   panel.style.display="block";
   start();
@@ -74,11 +70,9 @@ async function login(){
   const d = await res.json();
 
   if(d.status==="OK"){
-    SESSION = d;
-    localStorage.setItem("session",JSON.stringify(d));
-    loginBox.style.display="none";
-    panel.style.display="block";
-    start();
+    TOKEN = d.token;
+    localStorage.setItem("token", TOKEN);
+    location.reload();
   } else alert(d.message);
 }
 
@@ -86,11 +80,11 @@ async function login(){
 async function create(){
   const res = await fetch(API+"/add",{
     method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      email: SESSION.email,
-      maxDomain: max.value
-    })
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization": TOKEN
+    },
+    body: JSON.stringify({ maxDomain: max.value })
   });
 
   const d = await res.json();
@@ -101,31 +95,39 @@ async function create(){
 async function load(){
   const res = await fetch(API+"/list",{
     method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify(SESSION)
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization": TOKEN
+    }
   });
 
   const data = await res.json();
 
-  list.innerHTML = data.map(d=>{
+  let a=0,e=0,d=0;
+
+  list.innerHTML = data.map(x=>{
+    if(x.status==="ACTIVE") a++;
+    if(x.status==="EXPIRED") e++;
+    if(x.status==="DISABLED") d++;
+
     let cls="active";
-    if(d.status==="EXPIRED") cls="expired";
-    if(d.status==="DISABLED") cls="disabled";
+    if(x.status==="EXPIRED") cls="expired";
+    if(x.status==="DISABLED") cls="disabled";
 
     return `
     <div class="card">
-      ${d.email}<br>
-      <span class="badge ${cls}">${d.status}</span><br>
-      Exp: ${new Date(d.expire).toLocaleDateString()}<br>
-      Sisa: ${d.remaining}/${d.maxDomain}<br>
+      ${x.email}<br>
+      <span class="badge ${cls}">${x.status}</span><br>
+      Exp: ${new Date(x.expire).toLocaleDateString()}<br>
+      Sisa: ${x.remaining}/${x.maxDomain}<br>
 
-      ${SESSION.role==="admin" ? `
-        <button onclick="toggle('${d.id}')">Toggle</button>
-        <button onclick="del('${d.id}')">Delete</button>
-      ` : ``}
+      <button onclick="toggle('${x.id}')">Toggle</button>
+      <button onclick="del('${x.id}')">Delete</button>
     </div>
     `;
   }).join("");
+
+  stats.innerHTML = `Active:${a} | Expired:${e} | Disabled:${d}`;
 }
 
 // REALTIME
@@ -136,10 +138,19 @@ function start(){
 
 // ACTION
 async function toggle(id){
-  await fetch(API+"/toggle",{method:"POST",headers:{ "Content-Type":"application/json" },body:JSON.stringify({id})});
+  await fetch(API+"/toggle",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json","Authorization":TOKEN },
+    body: JSON.stringify({ id })
+  });
 }
+
 async function del(id){
-  await fetch(API+"/delete",{method:"POST",headers:{ "Content-Type":"application/json" },body:JSON.stringify({id})});
+  await fetch(API+"/delete",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json","Authorization":TOKEN },
+    body: JSON.stringify({ id })
+  });
 }
 </script>
 
