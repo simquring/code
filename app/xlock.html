@@ -1,61 +1,164 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XLOCK PANEL</title>
+
 <style>
+* { box-sizing:border-box; }
+
 body {
-  background:#020617;
+  margin:0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg,#020617,#0f172a);
   color:white;
-  font-family:sans-serif;
   display:flex;
   justify-content:center;
 }
-.container { max-width:900px; width:100%; padding:20px; }
-.card { background:#0f172a; padding:20px; border-radius:12px; margin-bottom:20px; text-align:center;}
-button { padding:10px; border-radius:8px; border:none; cursor:pointer;}
-input { width:100%; padding:10px; margin:5px 0; border-radius:8px; border:none;}
+
+.container {
+  width:100%;
+  max-width:1100px;
+  padding:20px;
+}
+
+/* CARD */
+.card {
+  background: rgba(15,23,42,0.7);
+  backdrop-filter: blur(10px);
+  border-radius:16px;
+  padding:20px;
+  margin-bottom:20px;
+  box-shadow:0 10px 40px rgba(0,0,0,0.4);
+  text-align:center;
+}
+
+/* INPUT */
+input {
+  width:100%;
+  padding:12px;
+  margin:6px 0;
+  border-radius:10px;
+  border:none;
+  background:#020617;
+  color:white;
+}
+
+/* BUTTON */
+button {
+  padding:10px 14px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  margin:5px;
+  font-weight:600;
+}
+
+.primary { background:#6366f1; }
+.danger { background:#ef4444; }
+.warning { background:#f59e0b; }
+.success { background:#22c55e; }
+
+/* LICENSE CARD */
+.license {
+  background:#020617;
+  border-radius:14px;
+  padding:18px;
+  margin-top:15px;
+  text-align:left;
+  transition:0.3s;
+}
+
+.license:hover {
+  transform:translateY(-3px);
+  box-shadow:0 10px 25px rgba(0,0,0,0.6);
+}
+
+/* STATUS BADGE */
+.badge {
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:bold;
+}
+
+.active { background:#22c55e; }
+.expired { background:#ef4444; }
+.disabled { background:#6b7280; }
+
+/* PROGRESS BAR */
+.bar {
+  height:8px;
+  background:#1e293b;
+  border-radius:999px;
+  overflow:hidden;
+  margin-top:6px;
+}
+
+.fill {
+  height:100%;
+  background:#6366f1;
+}
+
+/* SMALL TEXT */
+small { color:#94a3b8; }
+
+/* FLEX */
+.flex {
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:10px;
+}
 </style>
 </head>
 
 <body>
-
 <div class="container">
 
+<!-- LOGIN -->
 <div class="card" id="loginBox">
-<h2>Login</h2>
-<input id="u" placeholder="Username">
-<input id="p" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
+  <h2>🔐 Login Panel</h2>
+  <input id="u" placeholder="Username (contoh: admin)">
+  <input id="p" type="password" placeholder="Password (contoh: admin123)">
+  <button class="primary" onclick="login()">Login</button>
 </div>
 
+<!-- PANEL -->
 <div id="panel" style="display:none">
 
+<!-- CREATE -->
 <div class="card">
-<h2>Generate License</h2>
-<input id="user">
-<input id="max">
-<button onclick="create()">Generate</button>
-<div id="out"></div>
+  <h2>✨ Generate License</h2>
+
+  <input id="user" placeholder="Nama user (contoh: clientA)">
+  <input id="max" type="number" placeholder="Max domain (contoh: 3)">
+
+  <button class="primary" onclick="create()">Generate</button>
+
+  <div id="out"></div>
 </div>
 
+<!-- LIST -->
 <div class="card">
-<h2>License List</h2>
-<button onclick="load()">Refresh</button>
-<div id="list"></div>
+  <h2>📊 License Dashboard</h2>
+  <button onclick="load()">Refresh</button>
+
+  <div id="list"></div>
 </div>
 
 </div>
-
 </div>
 
 <script>
 const API = "https://xlock.stakemail91.workers.dev";
-let ROLE = "";
+let ROLE="";
 
 function format(date){
   return new Date(date).toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"});
 }
 
+// LOGIN
 async function login(){
   const res = await fetch(API+"/login",{
     method:"POST",
@@ -66,41 +169,79 @@ async function login(){
   const d = await res.json();
 
   if(d.status==="OK"){
-    ROLE = d.role;
+    ROLE=d.role;
     loginBox.style.display="none";
     panel.style.display="block";
     load();
   } else alert(d.message);
 }
 
+// CREATE
 async function create(){
   const res = await fetch(API+"/add",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
     body: JSON.stringify({ user:user.value, maxDomain:max.value })
   });
+
   const d = await res.json();
-  out.innerHTML = d.license+"<br>"+format(d.expire);
+
+  out.innerHTML = `
+    <br>
+    <small>Copy license ini:</small><br>
+    <b>${d.license}</b><br><br>
+    Aktif sampai: ${format(d.expire)}
+  `;
 }
 
+// LOAD LIST
 async function load(){
   const res = await fetch(API+"/list");
   const data = await res.json();
 
-  list.innerHTML = data.map(d=>`
-    <div class="card">
-      ${d.user}<br>
-      Status: ${d.status}<br>
-      Exp: ${format(d.expire)}<br>
-      Domain: ${d.domains.join(",")||"-"}<br>
-      Sisa Slot: ${d.remaining}<br><br>
+  list.innerHTML = data.map(d=>{
 
-      <button onclick="toggle('${d.id}')">ON/OFF</button>
-      <button onclick="del('${d.id}')">Delete</button>
+    let statusClass = "active";
+    if(d.status==="EXPIRED") statusClass="expired";
+    if(d.status==="DISABLED") statusClass="disabled";
+
+    const percent = (d.domains.length / d.maxDomain) * 100;
+
+    return `
+    <div class="license">
+      <div class="flex">
+        <b>${d.user}</b>
+        <span class="badge ${statusClass}">${d.status}</span>
+      </div>
+
+      <small>ID: ${d.id}</small><br><br>
+
+      <b>Expire:</b> ${format(d.expire)}<br>
+      <b>Domains:</b> ${d.domains.join(", ") || "-"}<br>
+
+      <b>Sisa Slot:</b> ${d.remaining} / ${d.maxDomain}
+
+      <div class="bar">
+        <div class="fill" style="width:${percent}%"></div>
+      </div>
+
+      <br>
+
+      <button class="success" onclick="copy('${d.id}')">Copy</button>
+      <button class="warning" onclick="toggle('${d.id}')">Toggle</button>
+      <button class="danger" onclick="del('${d.id}')">Delete</button>
     </div>
-  `).join("");
+    `;
+  }).join("");
 }
 
+// COPY LICENSE
+function copy(text){
+  navigator.clipboard.writeText(text);
+  alert("License copied!");
+}
+
+// TOGGLE
 async function toggle(id){
   await fetch(API+"/toggle",{
     method:"POST",
@@ -110,15 +251,18 @@ async function toggle(id){
   load();
 }
 
+// DELETE
 async function del(id){
+  if(!confirm("Hapus license ini?")) return;
+
   await fetch(API+"/delete",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
     body: JSON.stringify({ id })
   });
+
   load();
 }
 </script>
-
 </body>
 </html>
