@@ -5,125 +5,47 @@
 <title>XLOCK PANEL</title>
 
 <style>
-:root{
-  --bg:#020617;
-  --card:#0f172a;
-  --text:white;
-}
-
-.light{
-  --bg:#f1f5f9;
-  --card:white;
-  --text:#020617;
-}
-
 body{
   margin:0;
   font-family:sans-serif;
-  background:var(--bg);
-  color:var(--text);
+  background:#020617;
+  color:white;
   display:flex;
   justify-content:center;
 }
-
-.container{
-  width:100%;
-  max-width:1100px;
-  padding:20px;
-}
-
-.card{
-  background:var(--card);
-  padding:20px;
-  border-radius:14px;
-  margin-bottom:20px;
-  text-align:center;
-}
-
-input{
-  width:100%;
-  padding:10px;
-  margin:5px 0;
-  border-radius:8px;
-  border:none;
-}
-
-button{
-  padding:10px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-}
-
-.badge{
-  padding:4px 10px;
-  border-radius:999px;
-  font-size:12px;
-}
-
+.container{max-width:1000px;width:100%;padding:20px;}
+.card{background:#0f172a;padding:20px;border-radius:12px;margin-bottom:20px;}
+input{width:100%;padding:10px;margin:5px 0;border-radius:8px;border:none;}
+button{padding:10px;border:none;border-radius:8px;cursor:pointer;margin:3px;}
+.badge{padding:3px 8px;border-radius:999px;font-size:12px;}
 .active{background:#22c55e;}
 .expired{background:#ef4444;}
 .disabled{background:#6b7280;}
-
-.bar{
-  height:6px;
-  background:#1e293b;
-  border-radius:10px;
-  overflow:hidden;
-}
-
-.fill{
-  height:100%;
-  background:#6366f1;
-}
-
-.topbar{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:10px;
-}
 </style>
 </head>
 
 <body>
 <div class="container">
 
-<div class="topbar">
-  <h2>XLOCK PANEL</h2>
-  <button onclick="toggleTheme()">🌗 Toggle</button>
-</div>
-
-<!-- LOGIN -->
 <div class="card" id="loginBox">
-  <h3>Login</h3>
-  <input id="u" placeholder="admin">
-  <input id="p" type="password" placeholder="password">
-  <button onclick="login()">Login</button>
+<h3>Login</h3>
+<input id="email" placeholder="email">
+<input id="pass" type="password" placeholder="password">
+<button onclick="login()">Login</button>
 </div>
 
-<!-- PANEL -->
 <div id="panel" style="display:none">
 
-<!-- STATS -->
 <div class="card">
-  <h3>📊 Statistik</h3>
-  <div id="stats"></div>
+<h3>Generate License</h3>
+<input id="max" placeholder="max domain">
+<button onclick="create()">Generate</button>
+<div id="out"></div>
 </div>
 
-<!-- CREATE -->
 <div class="card">
-  <h3>Generate License</h3>
-  <input id="user" placeholder="clientA">
-  <input id="max" placeholder="3">
-  <button onclick="create()">Generate</button>
-  <div id="out"></div>
-</div>
-
-<!-- LIST -->
-<div class="card">
-  <h3>License List (Realtime)</h3>
-  <div id="list"></div>
+<h3>License</h3>
+<div id="list"></div>
 </div>
 
 </div>
@@ -133,138 +55,93 @@ button{
 <script>
 const API="https://xlock.stakemail91.workers.dev";
 
-// ================= SESSION =================
-if(localStorage.getItem("login")){
+let SESSION = JSON.parse(localStorage.getItem("session")||"null");
+
+if(SESSION){
   loginBox.style.display="none";
   panel.style.display="block";
-  startRealtime();
+  start();
 }
 
-// ================= LOGIN =================
+// LOGIN
 async function login(){
   const res = await fetch(API+"/login",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ username:u.value, password:p.value })
+    body: JSON.stringify({ email:email.value, password:pass.value })
   });
 
   const d = await res.json();
 
   if(d.status==="OK"){
-    localStorage.setItem("login","1");
+    SESSION = d;
+    localStorage.setItem("session",JSON.stringify(d));
     loginBox.style.display="none";
     panel.style.display="block";
-    startRealtime();
+    start();
   } else alert(d.message);
 }
 
-// ================= THEME =================
-if(localStorage.getItem("theme")==="light"){
-  document.body.classList.add("light");
-}
-
-function toggleTheme(){
-  document.body.classList.toggle("light");
-  localStorage.setItem("theme",
-    document.body.classList.contains("light")?"light":"dark"
-  );
-}
-
-// ================= FORMAT =================
-function format(date){
-  return new Date(date).toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"});
-}
-
-// ================= CREATE =================
+// CREATE
 async function create(){
   const res = await fetch(API+"/add",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ user:user.value, maxDomain:max.value })
+    body: JSON.stringify({
+      email: SESSION.email,
+      maxDomain: max.value
+    })
   });
 
   const d = await res.json();
-
-  out.innerHTML = `
-    <b>${d.license}</b><br>
-    Aktif sampai: ${format(d.expire)}
-  `;
+  out.innerHTML = d.license;
 }
 
-// ================= LOAD =================
+// LOAD
 async function load(){
-  const res = await fetch(API+"/list");
+  const res = await fetch(API+"/list",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(SESSION)
+  });
+
   const data = await res.json();
 
-  // STATS
-  let active=0, expired=0, disabled=0;
-
   list.innerHTML = data.map(d=>{
-    if(d.status==="ACTIVE") active++;
-    if(d.status==="EXPIRED") expired++;
-    if(d.status==="DISABLED") disabled++;
-
     let cls="active";
     if(d.status==="EXPIRED") cls="expired";
     if(d.status==="DISABLED") cls="disabled";
 
-    const percent=(d.domains.length/d.maxDomain)*100;
-
     return `
-    <div class="card" style="text-align:left">
-      <b>${d.user}</b>
-      <span class="badge ${cls}">${d.status}</span><br><br>
+    <div class="card">
+      ${d.email}<br>
+      <span class="badge ${cls}">${d.status}</span><br>
+      Exp: ${new Date(d.expire).toLocaleDateString()}<br>
+      Sisa: ${d.remaining}/${d.maxDomain}<br>
 
-      Exp: ${format(d.expire)}<br>
-      Domain: ${d.domains.join(",")||"-"}<br>
-      Sisa: ${d.remaining}/${d.maxDomain}
-
-      <div class="bar">
-        <div class="fill" style="width:${percent}%"></div>
-      </div><br>
-
-      <button onclick="copy('${d.id}')">Copy</button>
-      <button onclick="toggle('${d.id}')">Toggle</button>
-      <button onclick="del('${d.id}')">Delete</button>
+      ${SESSION.role==="admin" ? `
+        <button onclick="toggle('${d.id}')">Toggle</button>
+        <button onclick="del('${d.id}')">Delete</button>
+      ` : ``}
     </div>
     `;
   }).join("");
-
-  stats.innerHTML = `
-    Active: ${active} |
-    Expired: ${expired} |
-    Disabled: ${disabled}
-  `;
 }
 
-// ================= REALTIME =================
-function startRealtime(){
+// REALTIME
+function start(){
   load();
   setInterval(load,5000);
 }
 
-// ================= ACTION =================
-function copy(t){
-  navigator.clipboard.writeText(t);
-}
-
+// ACTION
 async function toggle(id){
-  await fetch(API+"/toggle",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ id })
-  });
-  load();
+  await fetch(API+"/toggle",{method:"POST",headers:{ "Content-Type":"application/json" },body:JSON.stringify({id})});
 }
-
 async function del(id){
-  await fetch(API+"/delete",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ id })
-  });
-  load();
+  await fetch(API+"/delete",{method:"POST",headers:{ "Content-Type":"application/json" },body:JSON.stringify({id})});
 }
 </script>
+
 </body>
 </html>
