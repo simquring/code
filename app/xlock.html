@@ -2,113 +2,76 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>XLOCK Generate Licensi</title>
+<title>XLOCK Generate</title>
 
 <style>
-*{box-sizing:border-box}
 body{
   margin:0;
-  font-family:Inter, sans-serif;
+  font-family:Inter,sans-serif;
   background:linear-gradient(135deg,#020617,#0f172a);
   color:white;
 }
-
-/* CENTER LOGIN */
-.center{
-  height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-}
-
+.container{max-width:1200px;margin:auto;padding:20px;}
 .card{
   background:rgba(255,255,255,0.05);
   backdrop-filter:blur(20px);
   border-radius:16px;
-  padding:25px;
-  box-shadow:0 10px 40px rgba(0,0,0,0.5);
+  padding:20px;
+  margin-bottom:15px;
 }
-
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:15px;
+}
 input,select{
   width:100%;
   padding:12px;
-  margin:6px 0;
+  margin:5px 0;
   border-radius:10px;
   border:none;
   background:#020617;
   color:white;
 }
-
 button{
-  padding:10px 15px;
+  padding:10px;
   border:none;
   border-radius:10px;
-  cursor:pointer;
   background:#3b82f6;
   color:white;
+  cursor:pointer;
 }
-
-/* DASHBOARD */
-.container{max-width:1200px;margin:auto;padding:20px;}
-
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-  gap:15px;
-}
-
-.license{
-  background:rgba(255,255,255,0.05);
-  padding:15px;
-  border-radius:12px;
-  transition:0.2s;
-}
-.license:hover{transform:scale(1.02)}
-
-.badge{
-  padding:4px 10px;
-  border-radius:999px;
-  font-size:12px;
-}
+.badge{padding:4px 10px;border-radius:999px;font-size:12px;}
 .active{background:#22c55e}
 .expired{background:#ef4444}
 .disabled{background:#6b7280}
-
-.topbar{
-  display:flex;
-  justify-content:space-between;
-  margin-bottom:15px;
-}
-
-.toggle{
-  cursor:pointer;
-}
+.topbar{display:flex;justify-content:space-between;margin-bottom:15px;}
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<div id="loginPage" class="center">
-  <div class="card" style="width:300px;text-align:center">
-    <h2>XLOCK LOGIN</h2>
+<div id="loginPage" style="display:flex;height:100vh;align-items:center;justify-content:center;">
+  <div class="card" style="width:300px">
+    <h2>Login</h2>
     <input id="email" placeholder="email">
     <input id="pass" type="password" placeholder="password">
     <button onclick="login()">Login</button>
   </div>
 </div>
 
-<!-- PANEL -->
 <div id="panel" style="display:none" class="container">
 
 <div class="topbar">
-  <h2>🚀 XLOCK DASHBOARD</h2>
-  <button onclick="logout()">Logout</button>
+<h2>XLOCK SaaS</h2>
+<button onclick="logout()">Logout</button>
 </div>
 
-<!-- ADMIN -->
-<div id="adminBox" class="card" style="display:none">
-<h3>👤 Add User</h3>
+<!-- ADMIN PANEL -->
+<div id="adminBox" style="display:none">
+
+<div class="card">
+<h3>Add User</h3>
 <input id="newEmail" placeholder="email">
 <input id="newPass" placeholder="password">
 <select id="newRole">
@@ -116,21 +79,24 @@ button{
 <option value="admin">Admin</option>
 </select>
 <button onclick="addUser()">Tambah</button>
-<div id="msg"></div>
 </div>
 
-<!-- GENERATE -->
 <div class="card">
-<h3>🔑 Generate License</h3>
-<input id="max" placeholder="max domain (contoh: 3)">
+<h3>Generate License</h3>
+<input id="max" placeholder="max domain">
 <button onclick="create()">Generate</button>
 <div id="out"></div>
 </div>
 
-<!-- STATS -->
-<div class="card">
-<h3>📊 Statistik</h3>
-<div id="stats"></div>
+</div>
+
+<!-- USER DOMAIN -->
+<div id="userBox" style="display:none" class="card">
+<h3>Tambah Domain</h3>
+<input id="lic" placeholder="license id">
+<input id="dom" placeholder="domain.com">
+<button onclick="addDomain()">Add Domain</button>
+<div id="dmsg"></div>
 </div>
 
 <!-- LIST -->
@@ -141,18 +107,10 @@ button{
 <script>
 const API="https://xlock.stakemail91.workers.dev";
 let TOKEN=localStorage.getItem("token");
+let ROLE="";
 
-// AUTO LOGIN
-if(TOKEN){
-  startApp();
-}
-
-function startApp(){
-  loginPage.style.display="none";
-  panel.style.display="block";
-  load();
-  setInterval(load,4000);
-}
+// INIT
+if(TOKEN) start();
 
 // LOGIN
 async function login(){
@@ -161,30 +119,65 @@ async function login(){
     headers:{ "Content-Type":"application/json" },
     body: JSON.stringify({ email:email.value,password:pass.value })
   });
-
   const d=await res.json();
 
   if(d.status==="OK"){
     TOKEN=d.token;
+    ROLE=d.role;
     localStorage.setItem("token",TOKEN);
-
-    if(d.role==="admin"){
-      adminBox.style.display="block";
-    }
-
-    startApp();
+    start();
   } else alert(d.message);
 }
 
-// LOGOUT
-function logout(){
-  localStorage.clear();
-  location.reload();
+function start(){
+  loginPage.style.display="none";
+  panel.style.display="block";
+
+  if(ROLE==="admin") adminBox.style.display="block";
+  else userBox.style.display="block";
+
+  load();
+  setInterval(load,4000);
 }
 
-// ADD USER
+// LOAD
+async function load(){
+  const res=await fetch(API+"/list",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json","Authorization":TOKEN }
+  });
+  const data=await res.json();
+
+  list.innerHTML=data.map(x=>{
+    let cls="active";
+    if(x.status==="EXPIRED") cls="expired";
+    if(x.status==="DISABLED") cls="disabled";
+
+    return `
+    <div class="card">
+      <b>${x.email}</b><br>
+      <span class="badge ${cls}">${x.status}</span><br><br>
+
+      License:<br>${x.id}<br><br>
+
+      Expire:<br>${new Date(x.expire).toLocaleDateString()}<br><br>
+
+      Domain:<br>${x.domains.join("<br>")}<br><br>
+
+      Sisa: ${x.remaining}
+
+      ${ROLE==="admin" ? `
+      <br><br>
+      <button onclick="toggle('${x.id}')">Toggle</button>
+      <button onclick="del('${x.id}')">Delete</button>
+      `:""}
+    </div>`;
+  }).join("");
+}
+
+// ACTION
 async function addUser(){
-  const res=await fetch(API+"/add-user",{
+  await fetch(API+"/add-user",{
     method:"POST",
     headers:{ "Content-Type":"application/json","Authorization":TOKEN },
     body: JSON.stringify({
@@ -193,65 +186,31 @@ async function addUser(){
       role:newRole.value
     })
   });
-
-  const d=await res.json();
-  msg.innerHTML=d.message||d.error;
 }
 
-// CREATE LICENSE
 async function create(){
-  const res=await fetch(API+"/add",{
+  const r=await fetch(API+"/add",{
     method:"POST",
     headers:{ "Content-Type":"application/json","Authorization":TOKEN },
     body: JSON.stringify({ maxDomain:max.value })
   });
-
-  const d=await res.json();
-  out.innerHTML="License: "+d.license;
+  const d=await r.json();
+  out.innerHTML=d.license;
 }
 
-// LOAD DATA
-async function load(){
-  const res=await fetch(API+"/list",{
+async function addDomain(){
+  const r=await fetch(API+"/add-domain",{
     method:"POST",
-    headers:{ "Content-Type":"application/json","Authorization":TOKEN }
+    headers:{ "Content-Type":"application/json","Authorization":TOKEN },
+    body: JSON.stringify({
+      license:lic.value,
+      domain:dom.value
+    })
   });
-
-  const data=await res.json();
-
-  let a=0,e=0,d=0;
-
-  list.innerHTML=data.map(x=>{
-    if(x.status==="ACTIVE") a++;
-    if(x.status==="EXPIRED") e++;
-    if(x.status==="DISABLED") d++;
-
-    let cls="active";
-    if(x.status==="EXPIRED") cls="expired";
-    if(x.status==="DISABLED") cls="disabled";
-
-    return `
-    <div class="license">
-      <b>${x.email}</b><br>
-      <span class="badge ${cls}">${x.status}</span><br><br>
-
-      Aktif sampai:<br>
-      ${new Date(x.expire).toLocaleDateString()}<br><br>
-
-      Domain: ${x.domains.length}/${x.maxDomain}<br><br>
-
-      <button onclick="toggle('${x.id}')">Toggle</button>
-      <button onclick="del('${x.id}')">Delete</button>
-    </div>
-    `;
-  }).join("");
-
-  stats.innerHTML=`
-  Active: ${a} | Expired: ${e} | Disabled: ${d}
-  `;
+  const d=await r.json();
+  dmsg.innerHTML=d.message||d.error;
 }
 
-// ACTION
 async function toggle(id){
   await fetch(API+"/toggle",{
     method:"POST",
@@ -265,6 +224,11 @@ async function del(id){
     headers:{ "Content-Type":"application/json","Authorization":TOKEN },
     body: JSON.stringify({id})
   });
+}
+
+function logout(){
+  localStorage.clear();
+  location.reload();
 }
 </script>
 
