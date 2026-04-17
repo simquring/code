@@ -1,48 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>XLOCK License Panel</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body {
-  font-family: 'Segoe UI', sans-serif;
-  background: #0f172a;
-  color: white;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
+  background:#020617;
+  color:white;
+  font-family:sans-serif;
+  padding:20px;
 }
 
 .card {
-  background:#1e293b;
-  padding:30px;
-  border-radius:16px;
-  width:100%;
-  max-width:400px;
-  box-shadow:0 0 30px rgba(0,0,0,0.4);
-}
-
-input, button {
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  border-radius:10px;
-  border:none;
+  background:#0f172a;
+  padding:20px;
+  border-radius:12px;
+  margin-bottom:20px;
 }
 
 button {
-  background:#6366f1;
-  color:white;
+  padding:10px;
+  border:none;
+  border-radius:8px;
   cursor:pointer;
-}
-
-.result {
-  margin-top:20px;
-  font-size:14px;
-  color:#22c55e;
 }
 </style>
 </head>
@@ -51,31 +30,56 @@ button {
 
 <div class="card">
   <h2>Create License</h2>
-
-  <input id="user" placeholder="Username">
-  <input id="maxDomain" placeholder="Max Domain" type="number">
-
+  <input id="user" placeholder="User"><br><br>
+  <input id="max" placeholder="Max Domain"><br><br>
   <button onclick="create()">Generate</button>
+  <div id="out"></div>
+</div>
 
-  <div class="result" id="result"></div>
+<div class="card">
+  <h2>License List</h2>
+  <button onclick="load()">Refresh</button>
+  <div id="list"></div>
 </div>
 
 <script>
-async function create() {
-  const user = document.getElementById("user").value;
-  const maxDomain = document.getElementById("maxDomain").value;
+const API = "https://xlock.stakemail91.workers.dev";
 
-  const res = await fetch("https://xlock.stakemail91.workers.dev/add-license", {
-    method: "POST",
-    body: JSON.stringify({ user, maxDomain })
+async function create() {
+  const res = await fetch(API + "/add", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      user: user.value,
+      maxDomain: max.value
+    })
   });
 
+  const d = await res.json();
+  out.innerHTML = `LICENSE:<br>${d.license}<br>EXPIRE:<br>${d.expire}`;
+}
+
+async function load() {
+  const res = await fetch(API + "/list");
   const data = await res.json();
 
-  document.getElementById("result").innerHTML = `
-    <b>License:</b><br>${data.license}<br><br>
-    <b>Expire:</b><br>${data.expire}
-  `;
+  list.innerHTML = data.map(d => `
+    <div class="card">
+      ${d.user}<br>
+      Exp: ${d.expire}<br>
+      Domain: ${d.domains.join(",")}<br>
+      <button onclick="del('${d.id}')">Delete</button>
+    </div>
+  `).join("");
+}
+
+async function del(id) {
+  await fetch(API + "/delete", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ id })
+  });
+  load();
 }
 </script>
 
