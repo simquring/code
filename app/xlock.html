@@ -6,9 +6,9 @@
 
 <style>
 body{margin:0;font-family:sans-serif;background:#020617;color:white;display:flex;justify-content:center;}
-.container{max-width:1000px;width:100%;padding:20px;}
+.container{max-width:1100px;width:100%;padding:20px;}
 .card{background:#0f172a;padding:20px;border-radius:12px;margin-bottom:20px;}
-input{width:100%;padding:10px;margin:5px 0;border-radius:8px;border:none;}
+input,select{width:100%;padding:10px;margin:5px 0;border-radius:8px;border:none;}
 button{padding:10px;border:none;border-radius:8px;margin:3px;cursor:pointer;}
 .badge{padding:3px 8px;border-radius:999px;font-size:12px;}
 .active{background:#22c55e;} .expired{background:#ef4444;} .disabled{background:#6b7280;}
@@ -27,6 +27,18 @@ button{padding:10px;border:none;border-radius:8px;margin:3px;cursor:pointer;}
 
 <div id="panel" style="display:none">
 
+<div class="card" id="adminOnly" style="display:none">
+<h3>👤 Add User</h3>
+<input id="newEmail" placeholder="email">
+<input id="newPass" placeholder="password">
+<select id="newRole">
+<option value="user">User</option>
+<option value="admin">Admin</option>
+</select>
+<button onclick="addUser()">Tambah User</button>
+<div id="userMsg"></div>
+</div>
+
 <div class="card">
 <h3>Generate License</h3>
 <input id="max" placeholder="max domain">
@@ -35,7 +47,7 @@ button{padding:10px;border:none;border-radius:8px;margin:3px;cursor:pointer;}
 </div>
 
 <div class="card">
-<h3>License Dashboard</h3>
+<h3>Dashboard</h3>
 <div id="stats"></div>
 <div id="list"></div>
 </div>
@@ -46,14 +58,14 @@ button{padding:10px;border:none;border-radius:8px;margin:3px;cursor:pointer;}
 
 <script>
 const API="https://xlock.stakemail91.workers.dev";
-let TOKEN = localStorage.getItem("token");
-let SESSION = null;
+let TOKEN=localStorage.getItem("token");
 
+// AUTO LOGIN
 if(TOKEN){
   init();
 }
 
-async function init(){
+function init(){
   loginBox.style.display="none";
   panel.style.display="block";
   start();
@@ -61,51 +73,63 @@ async function init(){
 
 // LOGIN
 async function login(){
-  const res = await fetch(API+"/login",{
+  const res=await fetch(API+"/login",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ email:email.value, password:pass.value })
+    body: JSON.stringify({ email:email.value,password:pass.value })
   });
-
-  const d = await res.json();
+  const d=await res.json();
 
   if(d.status==="OK"){
-    TOKEN = d.token;
-    localStorage.setItem("token", TOKEN);
+    TOKEN=d.token;
+    localStorage.setItem("token",TOKEN);
+
+    if(d.role==="admin"){
+      document.getElementById("adminOnly").style.display="block";
+    }
+
     location.reload();
   } else alert(d.message);
 }
 
-// CREATE
-async function create(){
-  const res = await fetch(API+"/add",{
+// ADD USER
+async function addUser(){
+  const res=await fetch(API+"/add-user",{
     method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization": TOKEN
-    },
-    body: JSON.stringify({ maxDomain: max.value })
+    headers:{ "Content-Type":"application/json","Authorization":TOKEN },
+    body: JSON.stringify({
+      email:newEmail.value,
+      password:newPass.value,
+      role:newRole.value
+    })
   });
-
-  const d = await res.json();
-  out.innerHTML = d.license;
+  const d=await res.json();
+  userMsg.innerHTML=d.message||d.error;
 }
 
-// LOAD
-async function load(){
-  const res = await fetch(API+"/list",{
+// CREATE LICENSE
+async function create(){
+  const res=await fetch(API+"/add",{
     method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization": TOKEN
-    }
+    headers:{ "Content-Type":"application/json","Authorization":TOKEN },
+    body: JSON.stringify({ maxDomain:max.value })
+  });
+  const d=await res.json();
+  out.innerHTML=d.license;
+}
+
+// LOAD LIST
+async function load(){
+  const res=await fetch(API+"/list",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json","Authorization":TOKEN }
   });
 
-  const data = await res.json();
+  const data=await res.json();
 
   let a=0,e=0,d=0;
 
-  list.innerHTML = data.map(x=>{
+  list.innerHTML=data.map(x=>{
     if(x.status==="ACTIVE") a++;
     if(x.status==="EXPIRED") e++;
     if(x.status==="DISABLED") d++;
@@ -120,14 +144,12 @@ async function load(){
       <span class="badge ${cls}">${x.status}</span><br>
       Exp: ${new Date(x.expire).toLocaleDateString()}<br>
       Sisa: ${x.remaining}/${x.maxDomain}<br>
-
       <button onclick="toggle('${x.id}')">Toggle</button>
       <button onclick="del('${x.id}')">Delete</button>
-    </div>
-    `;
+    </div>`;
   }).join("");
 
-  stats.innerHTML = `Active:${a} | Expired:${e} | Disabled:${d}`;
+  stats.innerHTML=`Active:${a} | Expired:${e} | Disabled:${d}`;
 }
 
 // REALTIME
@@ -141,18 +163,16 @@ async function toggle(id){
   await fetch(API+"/toggle",{
     method:"POST",
     headers:{ "Content-Type":"application/json","Authorization":TOKEN },
-    body: JSON.stringify({ id })
+    body: JSON.stringify({id})
   });
 }
-
 async function del(id){
   await fetch(API+"/delete",{
     method:"POST",
     headers:{ "Content-Type":"application/json","Authorization":TOKEN },
-    body: JSON.stringify({ id })
+    body: JSON.stringify({id})
   });
 }
 </script>
-
 </body>
 </html>
