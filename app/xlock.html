@@ -1,50 +1,119 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XLOCK PANEL</title>
+
 <style>
 body {
+  margin:0;
+  font-family:sans-serif;
   background:#020617;
   color:white;
-  font-family:sans-serif;
+  display:flex;
+  justify-content:center;
+}
+
+.container {
+  width:100%;
+  max-width:900px;
   padding:20px;
 }
 
 .card {
   background:#0f172a;
   padding:20px;
-  border-radius:12px;
+  border-radius:14px;
   margin-bottom:20px;
+  box-shadow:0 0 20px rgba(0,0,0,0.4);
+  text-align:center;
+}
+
+input {
+  width:100%;
+  padding:12px;
+  margin:8px 0;
+  border-radius:10px;
+  border:none;
 }
 
 button {
-  padding:10px;
+  padding:10px 16px;
   border:none;
-  border-radius:8px;
+  border-radius:10px;
   cursor:pointer;
+  margin:5px;
 }
+
+.primary { background:#6366f1; color:white; }
+.danger { background:#ef4444; color:white; }
+.success { background:#22c55e; color:white; }
+
+.list-card {
+  text-align:left;
+  background:#020617;
+  padding:15px;
+  border-radius:10px;
+  margin-top:10px;
+}
+
+small { color:#94a3b8; }
+
 </style>
 </head>
 
 <body>
 
+<div class="container">
+
+<!-- CREATE -->
 <div class="card">
-  <h2>Create License</h2>
-  <input id="user" placeholder="User"><br><br>
-  <input id="max" placeholder="Max Domain"><br><br>
-  <button onclick="create()">Generate</button>
+  <h2>Generate License</h2>
+
+  <input id="user" placeholder="Nama User">
+  <input id="max" type="number" placeholder="Max Domain">
+
+  <button class="primary" onclick="create()">Generate</button>
+
   <div id="out"></div>
 </div>
 
+<!-- VALIDATE -->
 <div class="card">
-  <h2>License List</h2>
+  <h2>Cek Validasi License</h2>
+
+  <input id="checkLicense" placeholder="Masukkan License">
+  <input id="checkDomain" placeholder="Domain (contoh: example.com)">
+
+  <button class="success" onclick="validate()">Check</button>
+
+  <div id="checkResult"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="card">
+  <h2>History License</h2>
   <button onclick="load()">Refresh</button>
   <div id="list"></div>
+</div>
+
 </div>
 
 <script>
 const API = "https://xlock.stakemail91.workers.dev";
 
+// FORMAT TANGGAL INDONESIA
+function formatTanggal(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
+}
+
+// ================= CREATE =================
 async function create() {
   const res = await fetch(API + "/add", {
     method:"POST",
@@ -56,31 +125,73 @@ async function create() {
   });
 
   const d = await res.json();
-  out.innerHTML = `LICENSE:<br>${d.license}<br>EXPIRE:<br>${d.expire}`;
+
+  out.innerHTML = `
+    <br>
+    <b>License:</b><br>${d.license}<br><br>
+    <b>Aktif sampai:</b><br>${formatTanggal(d.expire)}
+  `;
 }
 
+// ================= VALIDATE =================
+async function validate() {
+  const res = await fetch(API + "/validate", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      license: checkLicense.value,
+      domain: checkDomain.value
+    })
+  });
+
+  const d = await res.json();
+
+  if (d.status === "VALID") {
+    checkResult.innerHTML = `
+      <p style="color:#22c55e">VALID ✅</p>
+      Aktif sampai: ${formatTanggal(d.expire)}
+    `;
+  } else {
+    checkResult.innerHTML = `
+      <p style="color:#ef4444">BLOCKED ❌</p>
+      ${d.message}
+    `;
+  }
+}
+
+// ================= LOAD =================
 async function load() {
   const res = await fetch(API + "/list");
   const data = await res.json();
 
   list.innerHTML = data.map(d => `
-    <div class="card">
-      ${d.user}<br>
-      Exp: ${d.expire}<br>
-      Domain: ${d.domains.join(",")}<br>
-      <button onclick="del('${d.id}')">Delete</button>
+    <div class="list-card">
+      <b>User:</b> ${d.user}<br>
+      <b>ID:</b> ${d.id}<br>
+      <b>Max Domain:</b> ${d.maxDomain}<br>
+      <b>Domain:</b> ${d.domains.join(", ") || "-"}<br>
+      <b>Aktif sampai:</b> ${formatTanggal(d.expire)}<br><br>
+
+      <button class="danger" onclick="del('${d.id}')">Delete</button>
     </div>
   `).join("");
 }
 
+// ================= DELETE =================
 async function del(id) {
+  if (!confirm("Yakin hapus license ini?")) return;
+
   await fetch(API + "/delete", {
     method:"POST",
     headers:{ "Content-Type":"application/json" },
     body: JSON.stringify({ id })
   });
+
   load();
 }
+
+// AUTO LOAD
+load();
 </script>
 
 </body>
