@@ -1,65 +1,19 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>XLOCK PANEL</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body {
-  margin:0;
-  font-family:sans-serif;
   background:#020617;
   color:white;
+  font-family:sans-serif;
   display:flex;
   justify-content:center;
 }
-
-.container {
-  width:100%;
-  max-width:900px;
-  padding:20px;
-}
-
-.card {
-  background:#0f172a;
-  padding:20px;
-  border-radius:14px;
-  margin-bottom:20px;
-  box-shadow:0 0 20px rgba(0,0,0,0.4);
-  text-align:center;
-}
-
-input {
-  width:100%;
-  padding:12px;
-  margin:8px 0;
-  border-radius:10px;
-  border:none;
-}
-
-button {
-  padding:10px 16px;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-  margin:5px;
-}
-
-.primary { background:#6366f1; color:white; }
-.danger { background:#ef4444; color:white; }
-.success { background:#22c55e; color:white; }
-
-.list-card {
-  text-align:left;
-  background:#020617;
-  padding:15px;
-  border-radius:10px;
-  margin-top:10px;
-}
-
-small { color:#94a3b8; }
-
+.container { max-width:900px; width:100%; padding:20px; }
+.card { background:#0f172a; padding:20px; border-radius:12px; margin-bottom:20px; text-align:center;}
+button { padding:10px; border-radius:8px; border:none; cursor:pointer;}
+input { width:100%; padding:10px; margin:5px 0; border-radius:8px; border:none;}
 </style>
 </head>
 
@@ -67,131 +21,103 @@ small { color:#94a3b8; }
 
 <div class="container">
 
-<!-- CREATE -->
-<div class="card">
-  <h2>Generate License</h2>
-
-  <input id="user" placeholder="Nama User">
-  <input id="max" type="number" placeholder="Max Domain">
-
-  <button class="primary" onclick="create()">Generate</button>
-
-  <div id="out"></div>
+<div class="card" id="loginBox">
+<h2>Login</h2>
+<input id="u" placeholder="Username">
+<input id="p" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
 </div>
 
-<!-- VALIDATE -->
+<div id="panel" style="display:none">
+
 <div class="card">
-  <h2>Cek Validasi License</h2>
-
-  <input id="checkLicense" placeholder="Masukkan License">
-  <input id="checkDomain" placeholder="Domain (contoh: example.com)">
-
-  <button class="success" onclick="validate()">Check</button>
-
-  <div id="checkResult"></div>
+<h2>Generate License</h2>
+<input id="user">
+<input id="max">
+<button onclick="create()">Generate</button>
+<div id="out"></div>
 </div>
 
-<!-- HISTORY -->
 <div class="card">
-  <h2>History License</h2>
-  <button onclick="load()">Refresh</button>
-  <div id="list"></div>
+<h2>License List</h2>
+<button onclick="load()">Refresh</button>
+<div id="list"></div>
+</div>
+
 </div>
 
 </div>
 
 <script>
 const API = "https://xlock.stakemail91.workers.dev";
+let ROLE = "";
 
-// FORMAT TANGGAL INDONESIA
-function formatTanggal(dateStr) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric"
-  });
+function format(date){
+  return new Date(date).toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"});
 }
 
-// ================= CREATE =================
-async function create() {
-  const res = await fetch(API + "/add", {
+async function login(){
+  const res = await fetch(API+"/login",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      user: user.value,
-      maxDomain: max.value
-    })
+    body: JSON.stringify({ username:u.value, password:p.value })
   });
 
   const d = await res.json();
 
-  out.innerHTML = `
-    <br>
-    <b>License:</b><br>${d.license}<br><br>
-    <b>Aktif sampai:</b><br>${formatTanggal(d.expire)}
-  `;
+  if(d.status==="OK"){
+    ROLE = d.role;
+    loginBox.style.display="none";
+    panel.style.display="block";
+    load();
+  } else alert(d.message);
 }
 
-// ================= VALIDATE =================
-async function validate() {
-  const res = await fetch(API + "/validate", {
+async function create(){
+  const res = await fetch(API+"/add",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      license: checkLicense.value,
-      domain: checkDomain.value
-    })
+    body: JSON.stringify({ user:user.value, maxDomain:max.value })
   });
-
   const d = await res.json();
-
-  if (d.status === "VALID") {
-    checkResult.innerHTML = `
-      <p style="color:#22c55e">VALID ✅</p>
-      Aktif sampai: ${formatTanggal(d.expire)}
-    `;
-  } else {
-    checkResult.innerHTML = `
-      <p style="color:#ef4444">BLOCKED ❌</p>
-      ${d.message}
-    `;
-  }
+  out.innerHTML = d.license+"<br>"+format(d.expire);
 }
 
-// ================= LOAD =================
-async function load() {
-  const res = await fetch(API + "/list");
+async function load(){
+  const res = await fetch(API+"/list");
   const data = await res.json();
 
-  list.innerHTML = data.map(d => `
-    <div class="list-card">
-      <b>User:</b> ${d.user}<br>
-      <b>ID:</b> ${d.id}<br>
-      <b>Max Domain:</b> ${d.maxDomain}<br>
-      <b>Domain:</b> ${d.domains.join(", ") || "-"}<br>
-      <b>Aktif sampai:</b> ${formatTanggal(d.expire)}<br><br>
+  list.innerHTML = data.map(d=>`
+    <div class="card">
+      ${d.user}<br>
+      Status: ${d.status}<br>
+      Exp: ${format(d.expire)}<br>
+      Domain: ${d.domains.join(",")||"-"}<br>
+      Sisa Slot: ${d.remaining}<br><br>
 
-      <button class="danger" onclick="del('${d.id}')">Delete</button>
+      <button onclick="toggle('${d.id}')">ON/OFF</button>
+      <button onclick="del('${d.id}')">Delete</button>
     </div>
   `).join("");
 }
 
-// ================= DELETE =================
-async function del(id) {
-  if (!confirm("Yakin hapus license ini?")) return;
-
-  await fetch(API + "/delete", {
+async function toggle(id){
+  await fetch(API+"/toggle",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
     body: JSON.stringify({ id })
   });
-
   load();
 }
 
-// AUTO LOAD
-load();
+async function del(id){
+  await fetch(API+"/delete",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ id })
+  });
+  load();
+}
 </script>
 
 </body>
