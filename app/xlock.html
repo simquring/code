@@ -1,74 +1,81 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>XLOCK Admin</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body {
-      background:#0f172a;
-      color:white;
-      font-family:sans-serif;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      height:100vh;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XLOCK License Panel</title>
 
-    .card {
-      background:#1e293b;
-      padding:30px;
-      border-radius:16px;
-      width:100%;
-      max-width:400px;
-    }
+<style>
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #0f172a;
+  color: white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
 
-    input, button {
-      width:100%;
-      padding:12px;
-      margin-top:10px;
-      border-radius:8px;
-      border:none;
-    }
+.card {
+  background:#1e293b;
+  padding:30px;
+  border-radius:16px;
+  width:100%;
+  max-width:400px;
+  box-shadow:0 0 30px rgba(0,0,0,0.4);
+}
 
-    button {
-      background:#38bdf8;
-      color:black;
-      font-weight:bold;
-    }
+input, button {
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:10px;
+  border:none;
+}
 
-    .result {
-      margin-top:15px;
-      font-size:12px;
-      word-break:break-all;
-    }
-  </style>
+button {
+  background:#6366f1;
+  color:white;
+  cursor:pointer;
+}
+
+.result {
+  margin-top:20px;
+  font-size:14px;
+  color:#22c55e;
+}
+</style>
 </head>
+
 <body>
 
 <div class="card">
-  <h2>Add License</h2>
+  <h2>Create License</h2>
 
-  <input id="domain" placeholder="example.com">
+  <input id="user" placeholder="Username">
+  <input id="maxDomain" placeholder="Max Domain" type="number">
 
-  <button onclick="add()">Generate</button>
+  <button onclick="create()">Generate</button>
 
   <div class="result" id="result"></div>
 </div>
 
 <script>
-async function add() {
-  const domain = document.getElementById("domain").value;
+async function create() {
+  const user = document.getElementById("user").value;
+  const maxDomain = document.getElementById("maxDomain").value;
 
-  const res = await fetch("https://xlock.stakemail91.workers.dev/add", {
-    method:"POST",
-    body: JSON.stringify({ domain })
+  const res = await fetch("https://xlock.stakemail91.workers.dev/add-license", {
+    method: "POST",
+    body: JSON.stringify({ user, maxDomain })
   });
 
   const data = await res.json();
 
-  document.getElementById("result").innerText =
-    "EXP: " + new Date(data.exp).toLocaleString() +
-    "\\nLICENSE: " + JSON.stringify(data);
+  document.getElementById("result").innerHTML = `
+    <b>License:</b><br>${data.license}<br><br>
+    <b>Expire:</b><br>${data.expire}
+  `;
 }
 </script>
 
