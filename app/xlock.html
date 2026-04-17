@@ -1,39 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>License Panel</title>
-<style>
-body {
-  font-family: sans-serif;
-  background: #0f172a;
-  color: white;
-  padding:20px;
-}
-.card {
-  background:#1e293b;
-  padding:20px;
-  border-radius:12px;
-}
-input, button {
-  padding:10px;
-  margin:5px;
-  width:100%;
-}
-button {
-  background:#38bdf8;
-  border:none;
-}
-</style>
+  <title>XLOCK Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      background:#0f172a;
+      color:white;
+      font-family:sans-serif;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+    }
+
+    .card {
+      background:#1e293b;
+      padding:30px;
+      border-radius:16px;
+      width:100%;
+      max-width:400px;
+    }
+
+    input, button {
+      width:100%;
+      padding:12px;
+      margin-top:10px;
+      border-radius:8px;
+      border:none;
+    }
+
+    button {
+      background:#38bdf8;
+      color:black;
+      font-weight:bold;
+    }
+
+    .result {
+      margin-top:15px;
+      font-size:12px;
+      word-break:break-all;
+    }
+  </style>
 </head>
 <body>
 
 <div class="card">
-  <h2>Tambah Domain</h2>
-  <input id="domain" placeholder="example.com">
-  <button onclick="add()">Generate License</button>
+  <h2>Add License</h2>
 
-  <pre id="result"></pre>
+  <input id="domain" placeholder="example.com">
+
+  <button onclick="add()">Generate</button>
+
+  <div class="result" id="result"></div>
 </div>
 
 <script>
@@ -48,8 +67,8 @@ async function add() {
   const data = await res.json();
 
   document.getElementById("result").innerText =
-    "KEY: " + data.license_key +
-    "\nExpire: " + new Date(data.expire_at * 1000);
+    "EXP: " + new Date(data.exp).toLocaleString() +
+    "\\nLICENSE: " + JSON.stringify(data);
 }
 </script>
 
