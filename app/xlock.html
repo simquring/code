@@ -1,47 +1,37 @@
-async function validateXLock(licenseKey, apiBase = 'https://xsafe.stakemail91.workers.dev') {
-  const domain = window.location.hostname;
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XLock • Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { content: ["*"], theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui'] } } } }
+  </script>
+  <style>
+    body { background: linear-gradient(135deg, #0f172a 0%, #1e2937 100%); }
+    .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center text-white">
+  <div class="glass p-10 rounded-3xl shadow-2xl w-full max-w-md">
+    <h1 class="text-4xl font-bold text-center mb-2 bg-gradient-to-r from-cyan-400 to-violet-500 bg-clip-text text-transparent">XLock</h1>
+    <p class="text-center text-slate-400 mb-8">Secure Domain Licensing</p>
+    
+    <form id="loginForm" class="space-y-6">
+      <input id="email" type="email" placeholder="admin@xlock.dev" class="w-full bg-slate-900 border border-slate-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-cyan-400 transition">
+      <input id="password" type="password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-cyan-400 transition">
+      <button type="submit" class="w-full bg-gradient-to-r from-cyan-500 to-violet-600 hover:from-cyan-600 hover:to-violet-700 py-4 rounded-2xl font-semibold transition transform hover:scale-[1.02]">Login</button>
+    </form>
+  </div>
 
-  try {
-    const res = await fetch(`${apiBase}/verify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ licenseKey, domain }),
-      signal: controller.signal
+  <script>
+    // Simple fetch to /login → store JWT in localStorage
+    document.getElementById('loginForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      // ... fetch to backend /login, save token
+      window.location.href = 'index.html';
     });
-
-    clearTimeout(timeout);
-    const json = await res.json();
-
-    if (!json.success) {
-      showLockOverlay(json.message || 'License invalid');
-      return false;
-    }
-    console.log('%cXLock: License valid', 'color: #22ff88');
-    return true;
-  } catch (e) {
-    console.error('XLock validation failed', e);
-    showLockOverlay('Network error - contact owner');
-    return false;
-  }
-}
-
-function showLockOverlay(msg) {
-  const overlay = document.createElement('div');
-  overlay.innerHTML = `
-    <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-[9999]">
-      <div class="text-center text-white max-w-md px-8">
-        <div class="text-6xl mb-4">🔒</div>
-        <h2 class="text-3xl font-bold mb-2">Access Locked</h2>
-        <p class="text-red-400">${msg}</p>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-}
-
-// Usage in your protected app:
-document.addEventListener('DOMContentLoaded', () => {
-  const licenseKey = 'YOUR_USER_PROVIDED_KEY'; // or from URL/env
-  validateXLock(licenseKey);
-});
+  </script>
+</body>
+</html>
