@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Encrypt Tool X</title>
+
+<style>
+body{margin:0;font-family:Arial;background:#020617;color:#fff}
+.container{max-width:900px;margin:auto;padding:20px}
+h1{text-align:center}
+textarea,input,select{
+  width:100%;padding:12px;margin-top:10px;
+  border:none;border-radius:10px;font-size:14px
+}
+textarea{height:150px}
+button{
+  margin-top:10px;padding:12px;border:none;
+  border-radius:10px;background:#22c55e;
+  color:#000;font-weight:bold;cursor:pointer
+}
+.result{margin-top:20px;background:#000;padding:15px;border-radius:10px;word-break:break-all}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h1>⚡ Encrypt Tool X</h1>
+
+<textarea id="input" placeholder="Masukkan JS / Text"></textarea>
+<input type="password" id="password" placeholder="Password">
+
+<select id="mode">
+  <option value="text">Encrypt Text</option>
+  <option value="js">Encrypt → Auto Run JS</option>
+</select>
+
+<input type="number" id="expire" placeholder="Expire (detik, opsional)">
+
+<button onclick="encrypt()">Encrypt</button>
+<button onclick="copy()">Copy</button>
+
+<div class="result" id="output"></div>
+</div>
+
+<script>
+async function getKey(p){
+  const e=new TextEncoder();
+  const km=await crypto.subtle.importKey("raw",e.encode(p),"PBKDF2",false,["deriveKey"]);
+  return crypto.subtle.deriveKey({
+    name:"PBKDF2",salt:e.encode("xkey"),iterations:100000,hash:"SHA-256"
+  },km,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
+}
+
+function antiDev(){
+  setInterval(()=>{
+    const d=window.outerWidth-window.innerWidth>100;
+    if(d) document.body.innerHTML="DevTools detected";
+  },1000);
+}
+
+async function encrypt(){
+  const text=input.value;
+  const pass=password.value;
+  const mode=document.getElementById("mode").value;
+  const exp=parseInt(document.getElementById("expire").value||0);
+
+  if(!text||!pass) return alert("Lengkapi!");
+
+  const e=new TextEncoder();
+  const key=await getKey(pass);
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+
+  const enc=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,e.encode(text));
+
+  const payload=btoa(JSON.stringify({
+    iv:[...iv],
+    data:[...new Uint8Array(enc)],
+    exp:exp?Date.now()+exp*1000:0
+  }));
+
+  let result;
+
+  if(mode==="js"){
+    result = `<script>(async()=>{
+try{
+${antiDev.toString()}();
+
+const d="${payload}";
+const p=prompt("Password:");
+const e=new TextEncoder(),t=new TextDecoder();
+
+async function k(p){
+const km=await crypto.subtle.importKey("raw",e.encode(p),"PBKDF2",false,["deriveKey"]);
+return crypto.subtle.deriveKey({name:"PBKDF2",salt:e.encode("xkey"),iterations:100000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["decrypt"]);
+}
+
+const o=JSON.parse(atob(d));
+if(o.exp && Date.now()>o.exp) throw "Expired";
+
+const key=await k(p);
+const dec=await crypto.subtle.decrypt(
+{name:"AES-GCM",iv:new Uint8Array(o.iv)},
+key,
+new Uint8Array(o.data)
+);
+
+new Function(t.decode(dec))();
+
+}catch(e){document.body.innerHTML="Access Denied";}
+})();</script>`;
+  } else {
+    result = payload;
+  }
+
+  output.innerText = "//Encrypted by XTool\n"+result;
+}
+
+function copy(){
+  navigator.clipboard.writeText(output.innerText);
+  alert("Copied!");
+}
+</script>
+
+</body>
+</html>
