@@ -19,13 +19,17 @@ button{
   border-radius:10px;background:#22c55e;
   color:#000;font-weight:bold;cursor:pointer
 }
-.result{margin-top:20px;background:#000;padding:15px;border-radius:10px;word-break:break-all}
+.result{
+  margin-top:20px;background:#000;
+  padding:15px;border-radius:10px;
+  word-break:break-all;white-space:pre-wrap
+}
 </style>
 </head>
 <body>
 
 <div class="container">
-<h1>⚡ Encrypt Tool X</h1>
+<h1>🔐 Encrypt Tool X (Stable)</h1>
 
 <textarea id="input" placeholder="Masukkan JS / Text"></textarea>
 <input type="password" id="password" placeholder="Password">
@@ -44,78 +48,106 @@ button{
 </div>
 
 <script>
+async function getKey(password){
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+
+  return crypto.subtle.deriveKey(
+    {
+      name:"PBKDF2",
+      salt:enc.encode("xtool"),
+      iterations:100000,
+      hash:"SHA-256"
+    },
+    keyMaterial,
+    { name:"AES-GCM", length:256 },
+    false,
+    ["encrypt","decrypt"]
+  );
+}
+
+function antiDev(){
+  setInterval(()=>{
+    if(window.outerWidth - window.innerWidth > 120){
+      document.body.innerHTML = "Blocked";
+    }
+  },1000);
+}
+
 async function encrypt(){
-  const text = document.getElementById("input").value;
-  const pass = document.getElementById("password").value;
+  const input = document.getElementById("input").value;
+  const password = document.getElementById("password").value;
   const mode = document.getElementById("mode").value;
-  const exp = parseInt(document.getElementById("expire").value || 0);
+  const expire = parseInt(document.getElementById("expire").value || 0);
 
-  if(!text || !pass) return alert("Lengkapi!");
+  if(!input || !password){
+    alert("Isi semua field!");
+    return;
+  }
 
-  const e = new TextEncoder();
-  const key = await getKey(pass);
+  const enc = new TextEncoder();
+  const key = await getKey(password);
   const iv = crypto.getRandomValues(new Uint8Array(12));
 
-  const enc = await crypto.subtle.encrypt(
-    {name:"AES-GCM", iv},
+  const encrypted = await crypto.subtle.encrypt(
+    { name:"AES-GCM", iv },
     key,
-    e.encode(text)
+    enc.encode(input)
   );
 
   const payload = btoa(JSON.stringify({
-    iv:[...iv],
-    data:[...new Uint8Array(enc)],
-    exp: exp ? Date.now() + exp*1000 : 0
+    iv: Array.from(iv),
+    data: Array.from(new Uint8Array(encrypted)),
+    exp: expire ? Date.now() + expire*1000 : 0
   }));
 
   let result = "";
 
   if(mode === "js"){
-    const scriptContent = `(async()=>{
-try{
-(${antiDev.toString()})();
+    // 🔥 penting: TANPA template <script> langsung
+    result =
+"<scr"+"ipt>(async function(){try{" +
+"("+antiDev.toString()+")();" +
 
-const d="${payload}";
-const p=prompt("Password:");
-const e=new TextEncoder(),t=new TextDecoder();
+"const d='"+payload+"';" +
+"const p=prompt('Password:');" +
 
-async function k(p){
-const km=await crypto.subtle.importKey("raw",e.encode(p),"PBKDF2",false,["deriveKey"]);
-return crypto.subtle.deriveKey(
-{name:"PBKDF2",salt:e.encode("xkey"),iterations:100000,hash:"SHA-256"},
-km,
-{name:"AES-GCM",length:256},
-false,
-["decrypt"]
-);
-}
+"const e=new TextEncoder();" +
+"const t=new TextDecoder();" +
 
-const o=JSON.parse(atob(d));
-if(o.exp && Date.now()>o.exp) throw "Expired";
+"async function k(p){" +
+"const km=await crypto.subtle.importKey('raw',e.encode(p),'PBKDF2',false,['deriveKey']);" +
+"return crypto.subtle.deriveKey({name:'PBKDF2',salt:e.encode('xtool'),iterations:100000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);" +
+"}" +
 
-const key=await k(p);
-const dec=await crypto.subtle.decrypt(
-{name:"AES-GCM",iv:new Uint8Array(o.iv)},
-key,
-new Uint8Array(o.data)
-);
+"const o=JSON.parse(atob(d));" +
+"if(o.exp && Date.now()>o.exp) throw 'Expired';" +
 
-new Function(t.decode(dec))();
+"const key=await k(p);" +
+"const dec=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(o.iv)},key,new Uint8Array(o.data));" +
 
-}catch(e){
-document.body.innerHTML="Access Denied";
-}
-})();`;
+"new Function(t.decode(dec))();" +
 
-    // 🔥 FIX: pecah tag script biar gak bocor ke HTML
-    result = "<scr" + "ipt>" + scriptContent + "</scr" + "ipt>";
+"}catch(e){document.body.innerHTML='Access Denied';}})();</scr"+"ipt>";
 
   } else {
     result = payload;
   }
 
   document.getElementById("output").innerText =
-    "//Encrypted by XTool\n" + result;
+"//Encrypted by XTool\n" + result;
+}
+
+function copy(){
+  const text = document.getElementById("output").innerText;
+  navigator.clipboard.writeText(text);
+  alert("Copied!");
 }
 </script>
 
