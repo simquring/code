@@ -44,47 +44,36 @@ button{
 </div>
 
 <script>
-async function getKey(p){
-  const e=new TextEncoder();
-  const km=await crypto.subtle.importKey("raw",e.encode(p),"PBKDF2",false,["deriveKey"]);
-  return crypto.subtle.deriveKey({
-    name:"PBKDF2",salt:e.encode("xkey"),iterations:100000,hash:"SHA-256"
-  },km,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
-}
-
-function antiDev(){
-  setInterval(()=>{
-    const d=window.outerWidth-window.innerWidth>100;
-    if(d) document.body.innerHTML="DevTools detected";
-  },1000);
-}
-
 async function encrypt(){
-  const text=input.value;
-  const pass=password.value;
-  const mode=document.getElementById("mode").value;
-  const exp=parseInt(document.getElementById("expire").value||0);
+  const text = document.getElementById("input").value;
+  const pass = document.getElementById("password").value;
+  const mode = document.getElementById("mode").value;
+  const exp = parseInt(document.getElementById("expire").value || 0);
 
-  if(!text||!pass) return alert("Lengkapi!");
+  if(!text || !pass) return alert("Lengkapi!");
 
-  const e=new TextEncoder();
-  const key=await getKey(pass);
-  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const e = new TextEncoder();
+  const key = await getKey(pass);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
 
-  const enc=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,e.encode(text));
+  const enc = await crypto.subtle.encrypt(
+    {name:"AES-GCM", iv},
+    key,
+    e.encode(text)
+  );
 
-  const payload=btoa(JSON.stringify({
+  const payload = btoa(JSON.stringify({
     iv:[...iv],
     data:[...new Uint8Array(enc)],
-    exp:exp?Date.now()+exp*1000:0
+    exp: exp ? Date.now() + exp*1000 : 0
   }));
 
-  let result;
+  let result = "";
 
-  if(mode==="js"){
-    result = `<script>(async()=>{
+  if(mode === "js"){
+    const scriptContent = `(async()=>{
 try{
-${antiDev.toString()}();
+(${antiDev.toString()})();
 
 const d="${payload}";
 const p=prompt("Password:");
@@ -92,7 +81,13 @@ const e=new TextEncoder(),t=new TextDecoder();
 
 async function k(p){
 const km=await crypto.subtle.importKey("raw",e.encode(p),"PBKDF2",false,["deriveKey"]);
-return crypto.subtle.deriveKey({name:"PBKDF2",salt:e.encode("xkey"),iterations:100000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["decrypt"]);
+return crypto.subtle.deriveKey(
+{name:"PBKDF2",salt:e.encode("xkey"),iterations:100000,hash:"SHA-256"},
+km,
+{name:"AES-GCM",length:256},
+false,
+["decrypt"]
+);
 }
 
 const o=JSON.parse(atob(d));
@@ -107,18 +102,20 @@ new Uint8Array(o.data)
 
 new Function(t.decode(dec))();
 
-}catch(e){document.body.innerHTML="Access Denied";}
-})();</script>`;
+}catch(e){
+document.body.innerHTML="Access Denied";
+}
+})();`;
+
+    // 🔥 FIX: pecah tag script biar gak bocor ke HTML
+    result = "<scr" + "ipt>" + scriptContent + "</scr" + "ipt>";
+
   } else {
     result = payload;
   }
 
-  output.innerText = "//Encrypted by XTool\n"+result;
-}
-
-function copy(){
-  navigator.clipboard.writeText(output.innerText);
-  alert("Copied!");
+  document.getElementById("output").innerText =
+    "//Encrypted by XTool\n" + result;
 }
 </script>
 
