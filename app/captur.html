@@ -11,233 +11,221 @@
   --card:#1a1d24;
   --accent:#00ffd5;
   --text:#eaeaea;
-  --muted:#888;
 }
 
-*{
-  box-sizing:border-box;
-  margin:0;
-  padding:0;
-  font-family:system-ui, -apple-system, sans-serif;
-}
+*{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif;}
 
 body{
   background:var(--bg);
   color:var(--text);
-  display:flex;
-  flex-direction:column;
-  min-height:100vh;
 }
 
-/* HEADER */
-header{
-  padding:20px;
-  text-align:center;
-}
-
-header h1{
-  font-size:clamp(22px,5vw,32px);
-  background:linear-gradient(90deg,#00ffd5,#00aaff);
-  -webkit-background-clip:text;
-  color:transparent;
-}
-
-header p{
-  color:var(--muted);
-  font-size:14px;
-}
-
-/* CONTAINER */
 .container{
-  flex:1;
-  max-width:900px;
-  width:100%;
+  max-width:1100px;
   margin:auto;
   padding:15px;
 }
 
-/* INPUT */
-.input-group{
-  display:flex;
+h1{text-align:center;margin-bottom:10px;}
+.input-group{display:flex;gap:10px;margin-bottom:10px;}
+.input-group input{flex:1;padding:10px;border-radius:8px;border:none;background:#222;color:#fff;}
+.input-group button{padding:10px;border:none;border-radius:8px;background:var(--accent);cursor:pointer;}
+
+.viewer{display:flex;gap:10px;}
+.panel{flex:1;position:relative;background:#1a1d24;padding:10px;border-radius:12px;}
+
+video{width:100%;border-radius:10px;}
+canvas{width:100%;border-radius:10px;background:#000;}
+
+/* crop */
+.crop{
+  position:absolute;
+  border:2px dashed #00ffd5;
+}
+
+.handle{
+  width:10px;height:10px;background:#00ffd5;
+  position:absolute;
+}
+
+.br{bottom:-5px;right:-5px;cursor:nwse-resize;}
+.tl{top:-5px;left:-5px;cursor:nwse-resize;}
+
+.controls{display:flex;gap:10px;margin-top:10px;}
+.controls button, select{
+  flex:1;padding:10px;border:none;border-radius:8px;
+}
+
+.gallery{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
   gap:10px;
-  margin-bottom:15px;
+  margin-top:15px;
 }
 
-.input-group input{
-  flex:1;
-  padding:12px;
-  border:none;
-  border-radius:8px;
-  background:var(--card);
-  color:var(--text);
+.thumb{
+  position:relative;
 }
 
-.input-group button{
-  padding:12px 16px;
-  border:none;
-  border-radius:8px;
-  background:var(--accent);
-  color:#000;
-  font-weight:bold;
-  cursor:pointer;
-}
-
-/* VIDEO + CANVAS */
-.viewer{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:12px;
-}
-
-video, canvas{
+.thumb img{
   width:100%;
-  max-width:720px;   /* ⬅️ batas maksimal biar tidak terlalu besar */
-  aspect-ratio:16/9; /* ⬅️ jaga proporsi */
-  border-radius:12px;
+  border-radius:8px;
+}
+
+.thumb button{
+  position:absolute;
+  top:5px;
+  right:5px;
   background:#000;
-}
-
-/* untuk layar besar (desktop lebar) */
-@media(min-width:1200px){
-  video, canvas{
-    max-width:800px;
-  }
-}
-
-/* untuk mobile */
-@media(max-width:480px){
-  video, canvas{
-    max-width:100%;
-  }
-}
-
-/* BUTTONS */
-.actions{
-  display:flex;
-  gap:10px;
-  margin-top:10px;
-}
-
-.actions button{
-  flex:1;
-  padding:12px;
+  color:#fff;
   border:none;
-  border-radius:10px;
+  font-size:12px;
   cursor:pointer;
-  font-weight:bold;
 }
 
-.capture{
-  background:#00aaff;
-  color:#000;
-}
-
-.copy{
-  background:#00ffd5;
-  color:#000;
-}
-
-/* STATUS */
-#status{
-  margin-top:10px;
-  text-align:center;
-  color:var(--accent);
-  font-size:14px;
-}
-
-/* FOOTER */
-footer{
-  text-align:center;
-  padding:15px;
-  font-size:13px;
-  color:var(--muted);
-  border-top:1px solid #222;
-}
-
-/* MOBILE */
-@media(max-width:600px){
-  .input-group{
-    flex-direction:column;
-  }
-
-  .actions{
-    flex-direction:column;
-  }
+/* mobile */
+@media(max-width:768px){
+  .viewer{flex-direction:column;}
 }
 </style>
 </head>
 
 <body>
 
-<header>
-  <h1>⚡ FrameSnap Pro</h1>
-  <p>Capture frame video & copy instan tanpa upload</p>
-</header>
-
 <div class="container">
+<h1>⚡ FrameSnap Pro</h1>
 
-  <div class="input-group">
-    <input id="url" placeholder="Tempel URL video MP4/CDN">
-    <button onclick="loadVideo()">Load</button>
+<div class="input-group">
+  <input id="url" placeholder="URL video">
+  <button onclick="loadVideo()">Load</button>
+</div>
+
+<select id="ratio">
+  <option value="free">Free</option>
+  <option value="1">1:1</option>
+  <option value="1.777">16:9</option>
+  <option value="1.333">4:3</option>
+</select>
+
+<div class="viewer">
+  <div class="panel" id="wrap">
+    <video id="video" controls crossorigin="anonymous"></video>
+    <div id="crop" class="crop">
+      <div class="handle br"></div>
+    </div>
   </div>
 
-  <div class="viewer">
-    <video id="video" controls crossorigin="anonymous"></video>
+  <div class="panel">
     <canvas id="canvas"></canvas>
   </div>
+</div>
 
-  <div class="actions">
-    <button class="capture" onclick="capture()">📸 Capture</button>
-    <button class="copy" onclick="copyImage()">📋 Copy</button>
-  </div>
+<div class="controls">
+  <button onclick="capture()">📸 Capture</button>
+</div>
 
-  <div id="status"></div>
+<div class="gallery" id="gallery"></div>
 
 </div>
 
-<footer>
-  © 2026 FrameSnap Pro • Simple • Fast • 100% Browser
-</footer>
-
 <script>
-const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+const video=document.getElementById("video");
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+const cropBox=document.getElementById("crop");
+const gallery=document.getElementById("gallery");
+
+let crop={x:50,y:50,w:150,h:100};
+let dragging=false,resizing=false;
+
+document.getElementById("wrap").addEventListener("mousedown",e=>{
+  if(e.target.classList.contains("handle")){
+    resizing=true;
+  }else{
+    dragging=true;
+  }
+});
+
+document.addEventListener("mouseup",()=>{
+  dragging=false;
+  resizing=false;
+});
+
+document.addEventListener("mousemove",e=>{
+  let rect=video.getBoundingClientRect();
+  let x=e.clientX-rect.left;
+  let y=e.clientY-rect.top;
+
+  if(dragging){
+    crop.x=x-crop.w/2;
+    crop.y=y-crop.h/2;
+  }
+
+  if(resizing){
+    crop.w=x-crop.x;
+    let ratio=document.getElementById("ratio").value;
+
+    if(ratio!=="free"){
+      crop.h=crop.w/ratio;
+    }else{
+      crop.h=y-crop.y;
+    }
+  }
+
+  updateCrop();
+});
+
+function updateCrop(){
+  cropBox.style.left=crop.x+"px";
+  cropBox.style.top=crop.y+"px";
+  cropBox.style.width=crop.w+"px";
+  cropBox.style.height=crop.h+"px";
+}
 
 function loadVideo(){
-  video.src = document.getElementById("url").value;
-  setStatus("🎬 Video dimuat...");
+  video.src=document.getElementById("url").value;
 }
 
 function capture(){
-  if(!video.videoWidth){
-    setStatus("⚠️ Video belum siap");
-    return;
-  }
+  let scaleX=video.videoWidth/video.clientWidth;
+  let scaleY=video.videoHeight/video.clientHeight;
 
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+  let sx=crop.x*scaleX;
+  let sy=crop.y*scaleY;
+  let sw=crop.w*scaleX;
+  let sh=crop.h*scaleY;
 
-  ctx.drawImage(video,0,0);
-  setStatus("✅ Frame berhasil di-capture");
+  canvas.width=sw;
+  canvas.height=sh;
+  ctx.drawImage(video,sx,sy,sw,sh,0,0,sw,sh);
+
+  addToGallery(canvas.toDataURL());
 }
 
-async function copyImage(){
-  try{
-    canvas.toBlob(async (blob)=>{
-      await navigator.clipboard.write([
-        new ClipboardItem({"image/png": blob})
-      ]);
-      setStatus("📋 Berhasil di-copy ke clipboard!");
-    });
-  }catch(e){
-    setStatus("❌ Browser tidak support copy image");
-  }
+function addToGallery(src){
+  let div=document.createElement("div");
+  div.className="thumb";
+
+  let img=document.createElement("img");
+  img.src=src;
+
+  let btn=document.createElement("button");
+  btn.innerText="❌";
+  btn.onclick=()=>div.remove();
+
+  img.onclick=()=>copy(src);
+
+  div.appendChild(img);
+  div.appendChild(btn);
+  gallery.appendChild(div);
 }
 
-function setStatus(msg){
-  document.getElementById("status").innerText = msg;
+async function copy(src){
+  let blob=await (await fetch(src)).blob();
+  await navigator.clipboard.write([
+    new ClipboardItem({"image/png":blob})
+  ]);
+  alert("Copied!");
 }
 </script>
 
