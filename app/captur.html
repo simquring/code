@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FrameSnap Pro</title>
+
+<style>
+:root{
+  --bg:#0f1115;
+  --card:#1a1d24;
+  --accent:#00ffd5;
+  --text:#eaeaea;
+  --muted:#888;
+}
+
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  font-family:system-ui, -apple-system, sans-serif;
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+}
+
+/* HEADER */
+header{
+  padding:20px;
+  text-align:center;
+}
+
+header h1{
+  font-size:clamp(22px,5vw,32px);
+  background:linear-gradient(90deg,#00ffd5,#00aaff);
+  -webkit-background-clip:text;
+  color:transparent;
+}
+
+header p{
+  color:var(--muted);
+  font-size:14px;
+}
+
+/* CONTAINER */
+.container{
+  flex:1;
+  max-width:900px;
+  width:100%;
+  margin:auto;
+  padding:15px;
+}
+
+/* INPUT */
+.input-group{
+  display:flex;
+  gap:10px;
+  margin-bottom:15px;
+}
+
+.input-group input{
+  flex:1;
+  padding:12px;
+  border:none;
+  border-radius:8px;
+  background:var(--card);
+  color:var(--text);
+}
+
+.input-group button{
+  padding:12px 16px;
+  border:none;
+  border-radius:8px;
+  background:var(--accent);
+  color:#000;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+/* VIDEO + CANVAS */
+.viewer{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+video, canvas{
+  width:100%;
+  border-radius:12px;
+  background:#000;
+}
+
+/* BUTTONS */
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:10px;
+}
+
+.actions button{
+  flex:1;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.capture{
+  background:#00aaff;
+  color:#000;
+}
+
+.copy{
+  background:#00ffd5;
+  color:#000;
+}
+
+/* STATUS */
+#status{
+  margin-top:10px;
+  text-align:center;
+  color:var(--accent);
+  font-size:14px;
+}
+
+/* FOOTER */
+footer{
+  text-align:center;
+  padding:15px;
+  font-size:13px;
+  color:var(--muted);
+  border-top:1px solid #222;
+}
+
+/* MOBILE */
+@media(max-width:600px){
+  .input-group{
+    flex-direction:column;
+  }
+
+  .actions{
+    flex-direction:column;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>⚡ FrameSnap Pro</h1>
+  <p>Capture frame video & copy instan tanpa upload</p>
+</header>
+
+<div class="container">
+
+  <div class="input-group">
+    <input id="url" placeholder="Tempel URL video MP4/CDN">
+    <button onclick="loadVideo()">Load</button>
+  </div>
+
+  <div class="viewer">
+    <video id="video" controls crossorigin="anonymous"></video>
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="actions">
+    <button class="capture" onclick="capture()">📸 Capture</button>
+    <button class="copy" onclick="copyImage()">📋 Copy</button>
+  </div>
+
+  <div id="status"></div>
+
+</div>
+
+<footer>
+  © 2026 FrameSnap Pro • Simple • Fast • 100% Browser
+</footer>
+
+<script>
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function loadVideo(){
+  video.src = document.getElementById("url").value;
+  setStatus("🎬 Video dimuat...");
+}
+
+function capture(){
+  if(!video.videoWidth){
+    setStatus("⚠️ Video belum siap");
+    return;
+  }
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  ctx.drawImage(video,0,0);
+  setStatus("✅ Frame berhasil di-capture");
+}
+
+async function copyImage(){
+  try{
+    canvas.toBlob(async (blob)=>{
+      await navigator.clipboard.write([
+        new ClipboardItem({"image/png": blob})
+      ]);
+      setStatus("📋 Berhasil di-copy ke clipboard!");
+    });
+  }catch(e){
+    setStatus("❌ Browser tidak support copy image");
+  }
+}
+
+function setStatus(msg){
+  document.getElementById("status").innerText = msg;
+}
+</script>
+
+</body>
+</html>
