@@ -86,13 +86,30 @@ header p{
 .viewer{
   display:flex;
   flex-direction:column;
-  gap:10px;
+  align-items:center;
+  gap:12px;
 }
 
 video, canvas{
   width:100%;
+  max-width:720px;   /* ⬅️ batas maksimal biar tidak terlalu besar */
+  aspect-ratio:16/9; /* ⬅️ jaga proporsi */
   border-radius:12px;
   background:#000;
+}
+
+/* untuk layar besar (desktop lebar) */
+@media(min-width:1200px){
+  video, canvas{
+    max-width:800px;
+  }
+}
+
+/* untuk mobile */
+@media(max-width:480px){
+  video, canvas{
+    max-width:100%;
+  }
 }
 
 /* BUTTONS */
