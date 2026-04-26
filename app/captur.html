@@ -2,6 +2,11 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+<rect width='100' height='100' rx='20' fill='%230f1115'/>
+<circle cx='50' cy='50' r='20' fill='%2300ffd5'/>
+</svg>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FrameSnap Pro</title>
 
@@ -11,17 +16,16 @@
   --card:#1a1d24;
   --accent:#00ffd5;
   --text:#eaeaea;
+  --ok:#00ff9c;
+  --err:#ff4d4d;
 }
 
 *{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif;}
 
-body{
-  background:var(--bg);
-  color:var(--text);
-}
+body{background:var(--bg);color:var(--text);}
 
-/* layout */
 .container{max-width:1100px;margin:auto;padding:15px;}
+
 h1{text-align:center;margin-bottom:10px;}
 
 .input-group{display:flex;gap:10px;margin-bottom:10px;}
@@ -34,20 +38,14 @@ h1{text-align:center;margin-bottom:10px;}
   background:var(--accent);cursor:pointer;
 }
 
+/* viewer */
 .viewer{display:flex;gap:10px;}
-.panel{flex:1;position:relative;background:#1a1d24;padding:10px;border-radius:12px;}
+.panel{flex:1;background:#1a1d24;padding:10px;border-radius:12px;position:relative;}
 
-video, canvas{
-  width:100%;
-  border-radius:10px;
-  background:#000;
-}
+video, canvas{width:100%;border-radius:10px;background:#000;}
 
 /* crop */
-.crop{
-  position:absolute;
-  border:2px dashed #00ffd5;
-}
+.crop{position:absolute;border:2px dashed #00ffd5;}
 .handle{
   width:10px;height:10px;background:#00ffd5;
   position:absolute;bottom:-5px;right:-5px;cursor:nwse-resize;
@@ -55,9 +53,7 @@ video, canvas{
 
 /* controls */
 .controls{display:flex;gap:10px;margin-top:10px;}
-.controls button{
-  flex:1;padding:10px;border:none;border-radius:8px;
-}
+.controls button{flex:1;padding:10px;border:none;border-radius:8px;}
 
 /* gallery */
 .gallery{
@@ -72,6 +68,13 @@ video, canvas{
   background:#000;color:#fff;border:none;cursor:pointer;
 }
 
+/* status kecil */
+.status{
+  font-size:12px;
+  margin-top:5px;
+  color:var(--ok);
+}
+
 /* mobile */
 @media(max-width:768px){
   .viewer{flex-direction:column;}
@@ -84,7 +87,7 @@ video, canvas{
 <div class="container">
 <h1>⚡ FrameSnap Pro</h1>
 
-<!-- INPUT MP4 -->
+<!-- INPUT -->
 <div class="input-group">
   <input id="url" placeholder="Input URL MP4..." oninput="generateURL()">
   <button onclick="loadVideo()">Load</button>
@@ -95,13 +98,13 @@ video, canvas{
   <input id="result" placeholder="Generated URL..." readonly>
   <button onclick="copyResult()">📋 Copy</button>
 </div>
+<div id="copyStatus" class="status"></div>
 
+<!-- VIEW -->
 <div class="viewer">
   <div class="panel" id="wrap">
     <video id="video" controls crossorigin="anonymous"></video>
-    <div id="crop" class="crop">
-      <div class="handle"></div>
-    </div>
+    <div id="crop" class="crop"><div class="handle"></div></div>
   </div>
 
   <div class="panel">
@@ -124,11 +127,8 @@ const ctx=canvas.getContext("2d");
 const cropBox=document.getElementById("crop");
 const gallery=document.getElementById("gallery");
 
-let crop={x:50,y:50,w:150,h:100};
-let dragging=false,resizing=false;
-
 /* =========================
-   UNIVERSAL URL PARSER
+   URL PARSER
 ========================= */
 function generateURL(){
   let input=document.getElementById("url").value;
@@ -138,24 +138,16 @@ function generateURL(){
     let url=new URL(input);
     let path=url.pathname;
 
-    // xfree
     if(path.includes("/xfree-prod/")){
       result=path.split("/xfree-prod/")[1].replace(".mp4","");
     }
-
-    // xfollow
     else if(path.includes("/media/")){
       let parts=path.split("/");
       result=parts.slice(-3).join("/").replace(".mp4","");
     }
-
-    // slicedrive / aceimg / videy
-    else if(path.match(/\.mp4$/)){
-      let file=path.split("/").pop().replace(".mp4","");
-      result=file;
+    else if(path.endsWith(".mp4")){
+      result=path.split("/").pop().replace(".mp4","");
     }
-
-    // fallback
     else{
       result=input;
     }
@@ -168,26 +160,54 @@ function generateURL(){
   }
 }
 
-/* COPY */
-function copyResult(){
-  let val=document.getElementById("result").value;
-  navigator.clipboard.writeText(val);
+/* =========================
+   COPY FIX (NO POPUP)
+========================= */
+async function copyResult(){
+  const text=document.getElementById("result").value;
+  const status=document.getElementById("copyStatus");
+
+  if(!text){
+    status.style.color="var(--err)";
+    status.innerText="❌ Tidak ada URL";
+    return;
+  }
+
+  try{
+    await navigator.clipboard.writeText(text);
+
+    status.style.color="var(--ok)";
+    status.innerText="✅ Copied!";
+  }
+  catch{
+    // fallback
+    let input=document.getElementById("result");
+    input.removeAttribute("readonly");
+    input.select();
+    document.execCommand("copy");
+    input.setAttribute("readonly", true);
+
+    status.style.color="var(--ok)";
+    status.innerText="✅ Copied (fallback)";
+  }
 }
 
-/* VIDEO */
+/* =========================
+   VIDEO
+========================= */
 function loadVideo(){
   video.src=document.getElementById("url").value;
 }
 
 /* =========================
-   CROP SYSTEM
+   CROP
 ========================= */
+let crop={x:50,y:50,w:150,h:100};
+let dragging=false,resizing=false;
+
 document.getElementById("wrap").addEventListener("mousedown",e=>{
-  if(e.target.classList.contains("handle")){
-    resizing=true;
-  }else{
-    dragging=true;
-  }
+  if(e.target.classList.contains("handle")) resizing=true;
+  else dragging=true;
 });
 
 document.addEventListener("mouseup",()=>{
@@ -264,7 +284,6 @@ function addGallery(src){
   gallery.appendChild(div);
 }
 
-/* COPY IMAGE */
 async function copyImage(src){
   let blob=await (await fetch(src)).blob();
   await navigator.clipboard.write([
