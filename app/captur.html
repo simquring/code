@@ -20,67 +20,56 @@ body{
   color:var(--text);
 }
 
-.container{
-  max-width:1100px;
-  margin:auto;
-  padding:15px;
-}
-
+/* layout */
+.container{max-width:1100px;margin:auto;padding:15px;}
 h1{text-align:center;margin-bottom:10px;}
+
 .input-group{display:flex;gap:10px;margin-bottom:10px;}
-.input-group input{flex:1;padding:10px;border-radius:8px;border:none;background:#222;color:#fff;}
-.input-group button{padding:10px;border:none;border-radius:8px;background:var(--accent);cursor:pointer;}
+.input-group input{
+  flex:1;padding:10px;border:none;border-radius:8px;
+  background:#222;color:#fff;
+}
+.input-group button{
+  padding:10px;border:none;border-radius:8px;
+  background:var(--accent);cursor:pointer;
+}
 
 .viewer{display:flex;gap:10px;}
 .panel{flex:1;position:relative;background:#1a1d24;padding:10px;border-radius:12px;}
 
-video{width:100%;border-radius:10px;}
-canvas{width:100%;border-radius:10px;background:#000;}
+video, canvas{
+  width:100%;
+  border-radius:10px;
+  background:#000;
+}
 
 /* crop */
 .crop{
   position:absolute;
   border:2px dashed #00ffd5;
 }
-
 .handle{
   width:10px;height:10px;background:#00ffd5;
-  position:absolute;
+  position:absolute;bottom:-5px;right:-5px;cursor:nwse-resize;
 }
 
-.br{bottom:-5px;right:-5px;cursor:nwse-resize;}
-.tl{top:-5px;left:-5px;cursor:nwse-resize;}
-
+/* controls */
 .controls{display:flex;gap:10px;margin-top:10px;}
-.controls button, select{
+.controls button{
   flex:1;padding:10px;border:none;border-radius:8px;
 }
 
+/* gallery */
 .gallery{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
-  gap:10px;
-  margin-top:15px;
+  gap:10px;margin-top:15px;
 }
-
-.thumb{
-  position:relative;
-}
-
-.thumb img{
-  width:100%;
-  border-radius:8px;
-}
-
+.thumb{position:relative;}
+.thumb img{width:100%;border-radius:8px;}
 .thumb button{
-  position:absolute;
-  top:5px;
-  right:5px;
-  background:#000;
-  color:#fff;
-  border:none;
-  font-size:12px;
-  cursor:pointer;
+  position:absolute;top:5px;right:5px;
+  background:#000;color:#fff;border:none;cursor:pointer;
 }
 
 /* mobile */
@@ -95,23 +84,23 @@ canvas{width:100%;border-radius:10px;background:#000;}
 <div class="container">
 <h1>⚡ FrameSnap Pro</h1>
 
+<!-- INPUT MP4 -->
 <div class="input-group">
-  <input id="url" placeholder="URL video">
+  <input id="url" placeholder="Input URL MP4..." oninput="generateURL()">
   <button onclick="loadVideo()">Load</button>
 </div>
 
-<select id="ratio">
-  <option value="free">Free</option>
-  <option value="1">1:1</option>
-  <option value="1.777">16:9</option>
-  <option value="1.333">4:3</option>
-</select>
+<!-- OUTPUT -->
+<div class="input-group">
+  <input id="result" placeholder="Generated URL..." readonly>
+  <button onclick="copyResult()">📋 Copy</button>
+</div>
 
 <div class="viewer">
   <div class="panel" id="wrap">
     <video id="video" controls crossorigin="anonymous"></video>
     <div id="crop" class="crop">
-      <div class="handle br"></div>
+      <div class="handle"></div>
     </div>
   </div>
 
@@ -138,6 +127,61 @@ const gallery=document.getElementById("gallery");
 let crop={x:50,y:50,w:150,h:100};
 let dragging=false,resizing=false;
 
+/* =========================
+   UNIVERSAL URL PARSER
+========================= */
+function generateURL(){
+  let input=document.getElementById("url").value;
+  let result="";
+
+  try{
+    let url=new URL(input);
+    let path=url.pathname;
+
+    // xfree
+    if(path.includes("/xfree-prod/")){
+      result=path.split("/xfree-prod/")[1].replace(".mp4","");
+    }
+
+    // xfollow
+    else if(path.includes("/media/")){
+      let parts=path.split("/");
+      result=parts.slice(-3).join("/").replace(".mp4","");
+    }
+
+    // slicedrive / aceimg / videy
+    else if(path.match(/\.mp4$/)){
+      let file=path.split("/").pop().replace(".mp4","");
+      result=file;
+    }
+
+    // fallback
+    else{
+      result=input;
+    }
+
+    document.getElementById("result").value =
+      "https://twiimg.biz.id/v/?id=" + result;
+
+  }catch{
+    document.getElementById("result").value="";
+  }
+}
+
+/* COPY */
+function copyResult(){
+  let val=document.getElementById("result").value;
+  navigator.clipboard.writeText(val);
+}
+
+/* VIDEO */
+function loadVideo(){
+  video.src=document.getElementById("url").value;
+}
+
+/* =========================
+   CROP SYSTEM
+========================= */
 document.getElementById("wrap").addEventListener("mousedown",e=>{
   if(e.target.classList.contains("handle")){
     resizing=true;
@@ -163,13 +207,7 @@ document.addEventListener("mousemove",e=>{
 
   if(resizing){
     crop.w=x-crop.x;
-    let ratio=document.getElementById("ratio").value;
-
-    if(ratio!=="free"){
-      crop.h=crop.w/ratio;
-    }else{
-      crop.h=y-crop.y;
-    }
+    crop.h=y-crop.y;
   }
 
   updateCrop();
@@ -182,10 +220,9 @@ function updateCrop(){
   cropBox.style.height=crop.h+"px";
 }
 
-function loadVideo(){
-  video.src=document.getElementById("url").value;
-}
-
+/* =========================
+   CAPTURE
+========================= */
 function capture(){
   let scaleX=video.videoWidth/video.clientWidth;
   let scaleY=video.videoHeight/video.clientHeight;
@@ -197,35 +234,42 @@ function capture(){
 
   canvas.width=sw;
   canvas.height=sh;
+
+  ctx.imageSmoothingEnabled=true;
+  ctx.imageSmoothingQuality="high";
+
   ctx.drawImage(video,sx,sy,sw,sh,0,0,sw,sh);
 
-  addToGallery(canvas.toDataURL());
+  addGallery(canvas.toDataURL());
 }
 
-function addToGallery(src){
+/* =========================
+   GALLERY
+========================= */
+function addGallery(src){
   let div=document.createElement("div");
   div.className="thumb";
 
   let img=document.createElement("img");
   img.src=src;
 
-  let btn=document.createElement("button");
-  btn.innerText="❌";
-  btn.onclick=()=>div.remove();
+  let del=document.createElement("button");
+  del.innerText="❌";
+  del.onclick=()=>div.remove();
 
-  img.onclick=()=>copy(src);
+  img.onclick=()=>copyImage(src);
 
   div.appendChild(img);
-  div.appendChild(btn);
+  div.appendChild(del);
   gallery.appendChild(div);
 }
 
-async function copy(src){
+/* COPY IMAGE */
+async function copyImage(src){
   let blob=await (await fetch(src)).blob();
   await navigator.clipboard.write([
     new ClipboardItem({"image/png":blob})
   ]);
-  alert("Copied!");
 }
 </script>
 
