@@ -82,14 +82,14 @@ video, canvas{width:100%;border-radius:10px;background:#000;}
 
 .capture-float{
   position:fixed;
-  bottom:20px;
+  top:15px;
   left:50%;
   transform:translateX(-50%);
   z-index:999;
 }
 
 .capture-float button{
-  padding:10px 22px;
+  padding:8px 18px;
   border:none;
   border-radius:999px;
   background:var(--accent);
@@ -97,20 +97,22 @@ video, canvas{width:100%;border-radius:10px;background:#000;}
   font-weight:600;
   cursor:pointer;
 
-  box-shadow:0 6px 18px rgba(0,0,0,0.3);
+  box-shadow:0 4px 12px rgba(0,0,0,0.25);
   transition:all 0.2s ease;
 }
 
+/* hover halus */
 .capture-float button:hover{
   transform:translateY(-1px);
 }
 
+/* klik */
 .capture-float button:active{
   transform:scale(0.96);
 }
 
 body{
-  padding-bottom:80px;
+  padding-top:70px;
 }
 </style>
 </head>
