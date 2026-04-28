@@ -108,7 +108,9 @@ video, canvas{width:100%;border-radius:10px;background:#000;}
   <button onclick="copyResult()">📋 Copy</button>
 </div>
 <div id="copyStatus" class="status"></div>
-
+  <div class="controls center">
+    <button onclick="capture()">📸 Capture</button>
+  </div>
 <!-- VIEW -->
 <div class="viewer">
   <div class="panel" id="wrap">
@@ -118,10 +120,6 @@ video, canvas{width:100%;border-radius:10px;background:#000;}
 
 <div class="panel">
   <canvas id="canvas"></canvas>
-
-  <div class="controls center">
-    <button onclick="capture()">📸 Capture</button>
-  </div>
 </div>
 
 <div class="gallery" id="gallery"></div>
