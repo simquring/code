@@ -79,6 +79,15 @@ video, canvas{width:100%;border-radius:10px;background:#000;}
 @media(max-width:768px){
   .viewer{flex-direction:column;}
 }
+
+.controls.center{
+  justify-content:center;
+}
+
+.controls.center button{
+  flex:none;
+  width:200px;
+}
 </style>
 </head>
 
@@ -107,13 +116,12 @@ video, canvas{width:100%;border-radius:10px;background:#000;}
     <div id="crop" class="crop"><div class="handle"></div></div>
   </div>
 
-  <div class="panel">
-    <canvas id="canvas"></canvas>
-  </div>
-</div>
+<div class="panel">
+  <canvas id="canvas"></canvas>
 
-<div class="controls">
-  <button onclick="capture()">📸 Capture</button>
+  <div class="controls center">
+    <button onclick="capture()">📸 Capture</button>
+  </div>
 </div>
 
 <div class="gallery" id="gallery"></div>
