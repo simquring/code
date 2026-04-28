@@ -80,13 +80,18 @@ video, canvas{width:100%;border-radius:10px;background:#000;}
   .viewer{flex-direction:column;}
 }
 
-.controls.center{
+.capture-center{
+  display:flex;
   justify-content:center;
+  margin-bottom:15px;
 }
 
-.controls.center button{
-  flex:none;
-  width:200px;
+.capture-center button{
+  padding:10px 20px;
+  border:none;
+  border-radius:10px;
+  background:var(--accent);
+  cursor:pointer;
 }
 </style>
 </head>
@@ -95,6 +100,10 @@ video, canvas{width:100%;border-radius:10px;background:#000;}
 
 <div class="container">
 <h1>⚡ FrameSnap Pro</h1>
+
+<div class="capture-center">
+  <button onclick="capture()">📸 Capture</button>
+</div>
 
 <!-- INPUT -->
 <div class="input-group">
@@ -108,9 +117,7 @@ video, canvas{width:100%;border-radius:10px;background:#000;}
   <button onclick="copyResult()">📋 Copy</button>
 </div>
 <div id="copyStatus" class="status"></div>
-  <div class="controls center">
-    <button onclick="capture()">📸 Capture</button>
-  </div>
+
 <!-- VIEW -->
 <div class="viewer">
   <div class="panel" id="wrap">
@@ -118,8 +125,9 @@ video, canvas{width:100%;border-radius:10px;background:#000;}
     <div id="crop" class="crop"><div class="handle"></div></div>
   </div>
 
-<div class="panel">
-  <canvas id="canvas"></canvas>
+  <div class="panel">
+    <canvas id="canvas"></canvas>
+  </div>
 </div>
 
 <div class="gallery" id="gallery"></div>
